@@ -19,7 +19,7 @@
 import wx
 import re
 
-import mzGUI_standalone as mzGUI
+import multiplierz.mzGUI_standalone as mzGUI
 
 import mzDesktop
 

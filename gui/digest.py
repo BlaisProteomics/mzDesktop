@@ -25,7 +25,7 @@ import multiplierz.mzReport
 from multiplierz import myData
 from multiplierz.mass_biochem import digest, mz
 
-from mzGUI import report_chooser
+from multiplierz.mzGUI_standalone import report_chooser
 from gui import BasicTab
 
 class DigestPanel(BasicTab):
@@ -129,9 +129,9 @@ class DigestPanel(BasicTab):
                 pep = digests[j][0]
                 range = digests[j][1]
                 m_c = digests[j][2]
-                oneMass = "%0.3f" % mz(pep,1)
-                twoMass = "%0.3f" % mz(pep,2)
-                threeMass = "%0.3f" % mz(pep,3)
+                oneMass = "%0.3f" % mz(pep,[],1)
+                twoMass = "%0.3f" % mz(pep,[],2)
+                threeMass = "%0.3f" % mz(pep,[],3)
                 data.append((header, pep, range, m_c, oneMass, twoMass, threeMass))
 
 

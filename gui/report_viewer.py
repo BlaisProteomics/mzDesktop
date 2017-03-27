@@ -37,7 +37,7 @@ from multiplierz.mass_biochem import mz_pep_format
 
 import wxmpl
 
-from mzGUI import MZ_WILDCARD
+from multiplierz.mzGUI_standalone import MZ_WILDCARD
 
 from mzDesktop import find_mz_file, settings, logger_message
 

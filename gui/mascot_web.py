@@ -27,7 +27,7 @@ from multiplierz.mzSearch.mascot.report import MascotReport
 
 from mzDesktop import settings
 
-from mzGUI import report_chooser
+from multiplierz.mzGUI_standalone import report_chooser
 from gui import BasicTab
 
 class MascotWebPanel(BasicTab):

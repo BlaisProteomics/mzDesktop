@@ -11,7 +11,7 @@ from utilities.mzTransform import deconvolutionSession
 #from multiplierz.internalAlgorithms import iterativeFitBreak
 
 from gui import BasicTab
-from mzGUI import file_chooser
+from multiplierz.mzGUI_standalone import file_chooser
 from numpy import average
 
 

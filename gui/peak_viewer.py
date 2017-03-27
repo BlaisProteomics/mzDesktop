@@ -34,10 +34,11 @@ import multiplierz.mzReport
 from multiplierz.mzAPI import mzFile
 from multiplierz.mass_biochem import fragment, mz_pep_format
 from multiplierz.mzTools.mz_image import ion_color_dict
+import multiplierz.mzTools.mz_image as mz_image
 
 from mzDesktop import settings #, MZ_WILDCARD
 
-from mzGUI import report_chooser, file_chooser, mzPlot, MZ_WILDCARD
+from multiplierz.mzGUI_standalone import report_chooser, file_chooser, MZ_WILDCARD
 
 from gui.fragment import FragTable as FT
 
@@ -54,6 +55,253 @@ def add_centroid_scan_points(scan):
         scan_data.extend(((sc[0],0), sc, (sc[0],0)))
 
     return scan_data
+
+
+
+class mzPlot(wx.Frame):
+    def __init__(self, parent=None, title="mzPlot", size=(600,450)):
+        wx.Frame.__init__(self, parent, -1, title, size=size)
+
+        self.xy_data = None
+        self.last_anno = None
+        self.tooltip_str = '%%3.1f, %%3d' # default tooltip string
+
+        #Icon
+        self.SetIcon(wx.Icon(os.path.join(install_dir, 'images', 'icons', 'multiplierz.ico'),
+                             wx.BITMAP_TYPE_ICO))
+
+        #add menu bar
+        menu_bar = wx.MenuBar()
+
+        #Edit Menu
+        edit_menu = wx.Menu()
+
+        change_title = edit_menu.Append(-1, 'Change &Title\tCtrl+T', 'Change Plot Title')
+        self.Bind(wx.EVT_MENU, self.on_title, change_title)
+
+        x_label = edit_menu.Append(-1, 'Change &X Axis Label\tCtrl+X', 'Change X Axis Label')
+        self.Bind(wx.EVT_MENU, self.on_xlabel, x_label)
+
+        y_label = edit_menu.Append(-1, 'Change &Y Axis Label\tCtrl+Y', 'Change Y Axis Label')
+        self.Bind(wx.EVT_MENU, self.on_ylabel, y_label)
+
+        menu_bar.Append(edit_menu, "&Edit")
+
+        save_menu = wx.Menu()
+
+        save_image = save_menu.Append(-1, '&Save Image\tCtrl+S', 'Save Plot as Image')
+        self.Bind(wx.EVT_MENU, self.on_save, save_image)
+
+        menu_bar.Append(save_menu, "&Save")
+
+        resize_menu = wx.Menu()
+
+        resize_800 = resize_menu.Append(-1, "800x600\tAlt+1", "Resize Plot to 800x600")
+        self.Bind(wx.EVT_MENU, lambda e: self.on_resize((800,600)), resize_800)
+
+        resize_1200 = resize_menu.Append(-1, "1200x900\tAlt+2", "Resize Plot to 1200x900")
+        self.Bind(wx.EVT_MENU, lambda e: self.on_resize((1200,900)), resize_1200)
+
+        resize_1400 = resize_menu.Append(-1, "1400x1050\tAlt+3", "Resize Plot to 1400x1050")
+        self.Bind(wx.EVT_MENU, lambda e: self.on_resize((1400,1050)), resize_1400)
+
+        menu_bar.Append(resize_menu, "&Resize")
+
+        self.SetMenuBar(menu_bar)
+
+        self.plot_panel = wxmpl.PlotPanel(self, -1, (1.6, 1.2))
+        self.plot_panel.mpl_connect('button_release_event', self.on_click)
+
+        self.figure = self.plot_panel.get_figure()
+        a = self.figure.add_axes([0.125, 0.1, 0.775, 0.8])
+        a.set_title(title)
+
+        self.plot_panel.draw()
+
+        box = wx.BoxSizer()
+        box.Add(self.plot_panel, 1, wx.EXPAND, 0)
+        self.SetSizerAndFit(box)
+        self.SetSize(size)
+
+    def on_resize(self, size):
+        self.SetSize(size)
+        self.SendSizeEvent()
+
+    def on_title(self, event):
+        with wx.TextEntryDialog(self, 'Title this graph',
+                                'Enter Graph Title',
+                                self.GetTitle()) as title_dlg:
+            if title_dlg.ShowModal() == wx.ID_OK:
+                title = title_dlg.GetValue()
+                self.SetTitle(title)
+                self.figure.get_axes()[0].set_title(title)
+                self.plot_panel.draw()
+
+    def on_xlabel(self, event):
+        with wx.TextEntryDialog(self, 'Change X-Axis Label',
+                                'Enter X-Axis Label',
+                                self.figure.get_axes()[0].get_xlabel()) as xlabel_dlg:
+            if xlabel_dlg.ShowModal() == wx.ID_OK:
+                title = xlabel_dlg.GetValue()
+                self.figure.get_axes()[0].set_xlabel(title)
+                self.plot_panel.draw()
+
+    def on_ylabel(self, event):
+        with wx.TextEntryDialog(self, 'Change Y-Axis Label',
+                                'Enter Y-Axis Label',
+                                self.figure.get_axes()[0].get_ylabel()) as ylabel_dlg:
+            if ylabel_dlg.ShowModal() == wx.ID_OK:
+                title = ylabel_dlg.GetValue()
+                self.figure.get_axes()[0].set_ylabel(title)
+                self.plot_panel.draw()
+
+    def on_save(self, event):
+        wildcard = ("PNG (*.png)|*.png|"
+                    "PDF (*.pdf)|*.pdf|"
+                    "PS (*.ps)|*.ps|"
+                    "EPS (*.eps)|*.eps|"
+                    "SVG (*.svg)|*.svg")
+        formats = ('PNG', 'PDF', 'PS', 'EPS', 'SVG')
+
+        with wx.FileDialog(self, "Save figure as...",
+                           wildcard=wildcard, style=wx.FD_SAVE) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                self.plot_panel.print_figure(dlg.GetPath(),
+                                             format=formats[dlg.GetFilterIndex()])
+
+    def closest_point(self, event):
+        if self.xy_data is None:
+            return None
+
+        axes = event.canvas.figure.get_axes()[0]
+
+        xlim = axes.get_xlim()
+        ylim = axes.get_ylim()
+
+        xy_data = [(x,y) for x,y in self.xy_data
+                   if xlim[0] <= x <= xlim[1] and ylim[0] <= y <= ylim[1]]
+
+        if not xy_data:
+            return None
+
+        e_xy = array([event.x, event.y])
+
+        xy = min((axes.transData.transform([x,y]) for x,y in xy_data),
+                 key = lambda xy: hypot(*(e_xy - xy)))
+
+        # 10 pixel threshold for labeling
+        if all(abs(xy - e_xy) < 10.0):
+            return (tuple(abs(axes.transData.inverted().transform(xy))),
+                    tuple(axes.transData.inverted().transform(xy+5)))
+        else:
+            return None
+
+    def on_click(self, event):
+        '''Annotate the point closest to the cursor if it is within range'''
+
+        if event.inaxes:
+            xy_o = self.closest_point(event)
+            if xy_o:
+                xy,o = xy_o
+
+                if self.last_anno is not None:
+                    self.last_anno.remove()
+
+                tip = self.tooltip_str % xy
+
+                axes = self.figure.get_axes()[0]
+
+                t = axes.text(o[0], o[1], tip)
+                self.last_anno = t
+                event.canvas.draw()
+
+                return
+
+        if self.last_anno is not None:
+            self.last_anno.remove()
+            self.last_anno = None
+
+        event.canvas.draw()
+
+    def plot(self, *args, **kwargs):
+        '''A simple wrapper for matplotlib's axes.plot() function. If you
+        want to do something more complicated, you can access the figure
+        directly using mzPlot.figure'''
+
+        self.figure.clear()
+        axes = self.figure.add_axes([0.125, 0.1, 0.775, 0.8])
+        self.xy_data = axes.plot(*args, **kwargs)[0].get_xydata()
+
+        self.plot_panel.draw()
+
+    def plot_xic(self, title="XIC", data=None, scan_dot=None, other_MS2s=None):
+        if data is None:
+            raise TypeError("Required argument 'data' cannot be None")
+
+        self.tooltip_str = '(%%3.%df, %%3.%df)' % (settings.xic_time_figs,
+                                                   settings.xic_int_figs)
+
+        mz_image._make_xic(self.figure, None,
+                           [x for x,y in data],
+                           [y for x,y in data],
+                           scan_dot,
+                           [x for x,y in other_MS2s] if other_MS2s else [],
+                           [y for x,y in other_MS2s] if other_MS2s else [],
+                           title)
+
+        self.plot_panel.draw()
+
+    def plot_full_ms(self, title="Full MS", scan=None, scan_mz=None):
+        if scan is None:
+            raise TypeError("Required argument 'scan' cannot be None")
+
+        self.tooltip_str = '(%%3.%df, %%3.%df)' % (settings.ms1_mz_figs,
+                                                   settings.ms1_int_figs)
+
+        mz_image._make_ms1(self.figure,
+                           None,
+                           scan,
+                           scan.mode,
+                           [scan_mz] if scan_mz else None,
+                           title,
+                           settings.MS1_view_mz_window / 2)
+
+        self.plot_panel.draw()
+
+    def plot_ms_ms(self, title="MS-MS", scan=None):
+        if scan is None:
+            raise TypeError("Required argument 'scan' cannot be None")
+
+        self.tooltip_str = '(%%3.%df, %%3.%df)' % (settings.ms2_mz_figs,
+                                                   settings.ms2_int_figs)
+
+        mz_image._make_ms2(self.figure,
+                           scan,
+                           scan.mode,
+                           None,
+                           title=title)
+
+        self.plot_panel.draw()
+
+    def plot_venn(self, A, B, AB, A_label, B_label, title='Venn Diagram', eps=0.001):
+        '''Plot a proportional 2-set Venn diagram. A and B are the sizes of the two sets,
+        AB is the size of the intersection, and eps is an error margin for the proportional
+        placement. E.g. if eps is 0.01 then the areas of the plot will be accurate to ~1%.
+
+        A lower eps will give a more accurate plot at the expense of longer running time.
+        The method uses a bisecting search algorithm to find the right proportions.'''
+
+        mz_image.make_venn(self.figure, A, B, AB, A_label, B_label, title, eps)
+
+        self.plot_panel.draw()
+
+
+
+
+
+
+
+
 
 class PeakViewer(wx.Frame):
     def __init__(self, parent, icon=None, mz_file=None):

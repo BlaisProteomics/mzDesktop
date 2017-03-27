@@ -802,7 +802,7 @@ class PlotControl(object):
         
         self.topst.rtspan = self.gui.data.time_range()
         if psms:
-            rts = [self.gui.data.timeForScan(scanFromDesc(x['Spectrum Description']))
+            rts = [self.gui.data.time_for_scan(scanFromDesc(x['Spectrum Description']))
                    for x in psms]
             self.topst.rtspan = min(rts) - 0.5, max(rts) + 0.5
             for psmrt in rts:
@@ -810,12 +810,12 @@ class PlotControl(object):
                                                {'color':'b', 'alpha':0.2}))            
         else:
             if scan in self.gui.scanPlot.mzlookup:
-                rt = self.gui.data.timeForScan(scan)
+                rt = self.gui.data.time_for_scan(scan)
                 self.topst.rtspan = rt - 2, rt + 2
             # Else the time_range() span is sufficient.
         
         if scan:
-            rt = self.gui.data.timeForScan(scan)
+            rt = self.gui.data.time_for_scan(scan)
             self.topst.annotations.append(('currentscan', 'pin', rt, {'color':'r', 'linestyle':'--'}))
 
 
@@ -823,7 +823,7 @@ class PlotControl(object):
             features = [self.gui.features[x] for x in
                          set([psm['Feature'] for psm in psms]) if x != '-']
             for feature in features:
-                featurerange = [self.gui.data.timeForScan(x) for x in feature.scanrange]
+                featurerange = [self.gui.data.time_for_scan(x) for x in feature.scanrange]
                 self.topst.annotations.append(('feature', 'range', featurerange, {'color':'k', 'alpha':0.2}))
 
         if psms and self.gui.mode == 'SILAC' and any(['Feature' in x for x in psms[0].keys()]):
@@ -836,7 +836,7 @@ class PlotControl(object):
 
             for features, color in zip([lightfeatures, mediumfeatures, heavyfeatures], ('r', 'g', 'b')):
                 for feature in features:
-                    featurerange = [self.gui.data.timeForScan(x) for x in feature.scanrange]
+                    featurerange = [self.gui.data.time_for_scan(x) for x in feature.scanrange]
                     self.topst.annotations.append(('silacFeature', 'range', featurerange, {'color':color, 'alpha':0.2}))
 
 
@@ -1050,7 +1050,7 @@ class InterfacePlot(wx.Panel):
         
         xicstate.annotations = [('currentscan', 'pin', rt, {'color':'r', 'linestyle':'--'})]
         
-        scanNum = self.data.scanForTime(rt)
+        scanNum = self.data.scan_for_time(rt)
         scanstate.scan = scanNum
         scanstate.mzspan = 0, largenum
         scanstate.centroid = centroid

@@ -338,7 +338,7 @@ class deconvolutionSession(wx.Frame):
         
         self.goButton.Enable(False)
         self.browseButton.Enable(False)
-        wx.StartBusyCursor()
+        wx.BeginBusyCursor()
         
         self.fileBox.AppendText("\n")
         if all([x.split(".")[-1] == "txt" for x in self.files]) and consolidateMode:

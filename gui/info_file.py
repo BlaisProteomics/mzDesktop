@@ -22,7 +22,7 @@ import multiplierz.mzAPI
 
 #from mzDesktop import MZ_WILDCARD
 
-from mzGUI import MZ_WILDCARD
+from multiplierz.mzGUI_standalone import MZ_WILDCARD
 
 from gui import BasicTab
 

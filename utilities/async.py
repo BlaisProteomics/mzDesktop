@@ -74,7 +74,7 @@ def launch_process(function, callback = None, *args, **kwargs):
         
         if isinstance(results, Exception):
             raise results
-        if callable(callback):
+        elif callable(callback):
             return callback(results)
         elif hasattr(callback, 'Enable'):
             callback.Enable(True)
@@ -85,10 +85,11 @@ def launch_process(function, callback = None, *args, **kwargs):
             raise Exception, "Invalid callback."        
     except Exception as err:
         messdog = wx.MessageDialog(None,
-                                   ('An error occured:\n%s\n'
-                                    'Please consider '
-                                    'submitting a bug report '
-                                    'to the multiplierz team.' % repr(err)),
+                                   ('An error occured:\n%s\n\n'
+                                    'If you think this is due to a problem '
+                                    'in mzDesktop, please consider submitting '
+                                    'a bug report on the issues page of the '
+                                    'mzDesktop Github repository.' % repr(err)),
                                    'Error', style = wx.OK)
         messdog.ShowModal()
         messdog.Destroy()

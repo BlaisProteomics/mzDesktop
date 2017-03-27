@@ -28,29 +28,17 @@ commonMods = ['Oxidation(M)',
               'Carbamidomethyl(C)',
               'Methylthio(C)']
 
-
-cysteomeMods = ['NG-CDKidtb',
-                'NG-JNKidtb',
-                'NG-YKL-04-126',
-                'NG-YKL-04-128',
-                'NG-CDK12dtb',
-                'NG-MALT1idtb',
-                'QL47']
-
 itraqMods = ['iTRAQ8plex',
              'iTRAQ4plex']
 
-additionalMods = commonMods + [''] + cysteomeMods + [''] + itraqMods
+additionalMods = commonMods + [''] + [''] + itraqMods
 
-#import multiplierz.unimod as unimod
+
 from multiplierz import myData
+from multiplierz.settings import settings
 
-if os.path.exists(os.path.join(os.curdir, 'mzDesktop.py')):
-    install_dir = os.path.abspath(os.curdir)
-else:
-    install_dir = os.path.dirname(sys.executable)
-global COMET_DIR
-COMET_DIR = os.path.join(install_dir, "pyComet")
+COMET_DIR = os.path.dirname(settings.get_comet())
+workflow_record = os.path.join(myData, 'comet_workflows.txt')
 #ENZYME_DICT = {'No_enzyme':'0', 'Trypsin':'1', r'Trypsin/P':'2', 'Lys_C':'3', 'Lys_N':'4', 'Arg_C':'5', 'Asp_N':'6', r'CNBr':'7', 'Glu_C':'8', 'PepsinA':'9', 'Chymotrypsin':'10'}
 ENZYME_DICT = {"No_enzyme":'0', 'Trypsin':'1', r'Lys_C':'2', 'Lys_N':'3','Arg_C':'4','Asp_N':'5','CNBr':'6','Glu_C':'7','PepsinA':'8','Chymotrypsin':'9',r'Trypsin/Glu_C':'10',r"Trypsin/P":'11'}
 
@@ -66,7 +54,7 @@ with open(fastaFiles, 'r') as fastas:
         if not line.strip()[0] == '#':
             DATABASES.append(line.strip())
 
-assert DATABASES, "No database paths found in %s; please update file." % fastaFiles
+#assert DATABASES, "No database paths found in %s; please update file." % fastaFiles
 
 def get_multiple_files(caption):
     dlg = wx.FileDialog(None, caption, defaultFile=os.getcwd(), pos = (2,2), style = wx.FD_MULTIPLE, wildcard = "*.xls")
@@ -92,16 +80,16 @@ class InsertFrame(wx.Frame):
         nb = wx.Notebook(panel, size=(600,600), pos= (10,10))
         self.page1 = Page(nb)
         self.page2 = Page(nb)
-        self.page3 = Page(nb)
+        #self.page3 = Page(nb)
         
         nb.AddPage(self.page1, "Main")
         nb.AddPage(self.page2, "Settings")
-        nb.AddPage(self.page3, "Queue")
+        #nb.AddPage(self.page3, "Queue")
         
         self.createButtons(self.page1)
         self.createCheckBoxes(self.page1)
         self.createLabels(self.page1)
-        self.createListBoxes(self.page3)
+        #self.createListBoxes(self.page3)
         self.createTextBoxes(self.page1)
         
         self.createComboBoxes(self.page1)
@@ -112,10 +100,10 @@ class InsertFrame(wx.Frame):
         
         self.statusbar = self.CreateStatusBar()
         self.statusbar.SetStatusText("Ready")
-        self.set_workflow("normal")
+        self.set_workflow("Nothing")
         self.FindWindowByName("FDR_Rate").Show(False) 
         self.FindWindowByName("enzyme").SetValue("Trypsin")
-        self.FindWindowByName("workFlow").SetValue("normal")
+        self.FindWindowByName("workFlow").SetValue("Nothing")
         self.CreateMenuBar()
         self.vmb = True
         self.fmb = True
@@ -174,12 +162,11 @@ class InsertFrame(wx.Frame):
         
     def read_workflow(self):
         try:
-            workflowFile = open(os.path.join(COMET_DIR, 'workflowRecord.txt'), 'r')
+            workflowFile = open(workflow_record, 'r')
         except IOError as err:
             if err[0] == 2: # 'No such file or directory'
-                open(os.path.join(COMET_DIR, 'workflowRecord.txt'), 'w')
-                print "No workflow file found; creating empty file."
-                return {}
+                print "No workflow file %s found."% workflow_record
+                return {'Nothing':([], [])}
         
         workflows = {}
         for line in workflowFile:
@@ -194,12 +181,11 @@ class InsertFrame(wx.Frame):
     
     def read_workflow_list(self):
         try:
-            workflowFile = open(os.path.join(COMET_DIR, 'workflowRecord.txt'), 'r')
+            workflowFile = open(workflow_record, 'r')
         except IOError as err:
             if err[0] == 2: # 'No such file or directory'
-                open(os.path.join(COMET_DIR, 'workflowRecord.txt'), 'w')
-                print "No workflow file found; creating empty file."
-                return {}
+                print "No workflow file %s found." % workflow_record
+                return {'Nothing':([], [])}
 
         workflows = []
         for line in workflowFile:
@@ -212,9 +198,10 @@ class InsertFrame(wx.Frame):
     def set_workflow(self, workflow):
         #workflow_dict = self.return_mods()
         workflow_dict = self.read_workflow()
-        print workflow
-        print workflow_dict[workflow]
-        print workflow_dict
+
+        if workflow not in workflow_dict:
+            return
+
         vm = workflow_dict[workflow][1]
         fm = workflow_dict[workflow][0]
         self.FindWindowByName("modsListBox").Clear()
@@ -298,6 +285,9 @@ class InsertFrame(wx.Frame):
 
 
     def BuildOneComboBox(self, panel, eachName, eachPos, eachSize, eachList, eachInit, eachEvent, eachHandler, eachPanel):
+        if isinstance(eachList, dict):
+            eachList = eachList.keys()
+            
         try:
             ComboBox = wx.ComboBox(eachPanel, -1, size=eachSize, pos=eachPos, name=eachName, value=eachList[eachInit], choices=eachList)
         except IndexError:
@@ -443,7 +433,7 @@ class InsertFrame(wx.Frame):
         return checkbox
 
     def OnBrowse(self, event):
-        dlg = wx.FileDialog(None, "Select Files..", defaultDir = COMET_DIR, pos = (2,2), style = wx.FD_MULTIPLE, wildcard = "Peak Lists (*.ms2,*.mgf)|*.ms2;*.mgf")
+        dlg = wx.FileDialog(None, "Select Files..", pos = (2,2), style = wx.FD_MULTIPLE, wildcard = "Peak Lists (*.ms2,*.mgf)|*.ms2;*.mgf")
         if dlg.ShowModal() == wx.ID_OK:
             filenames=dlg.GetFilenames()
             dir = dlg.GetDirectory()
@@ -743,7 +733,7 @@ class WorkflowEditor(wx.Frame):
         self.fixModList = additionalMods + [''] + modNames
         
         
-        wx.Frame.__init__(self, parent, -1, "Workflow Editor", size = (500, 800))
+        wx.Frame.__init__(self, parent, -1, "Workflow Editor", size = (500, 830))
         panel = wx.Panel(self, -1)
         
         gbs = wx.GridBagSizer(10, 5)
@@ -762,9 +752,11 @@ class WorkflowEditor(wx.Frame):
                                              size = (220, 600), name = "Fixmods")
         
         self.saveButton = wx.Button(panel, -1, "Save Changes")
+        self.closeButton = wx.Button(panel, -1, "Close")
         
         self.Bind(wx.EVT_COMBOBOX, self.loadWorkflow, self.workflowSelect)
         self.Bind(wx.EVT_BUTTON, self.saveWorkFlow, self.saveButton)
+        self.Bind(wx.EVT_BUTTON, self.OnClose, self.closeButton)
         
         gbs.Add(workflowLabel, (0, 0), (1, 1))
         gbs.Add(self.workflowSelect, (0, 1), (1, 4), flag = wx.EXPAND)
@@ -773,6 +765,7 @@ class WorkflowEditor(wx.Frame):
         gbs.Add(self.varModControl, (3, 0), (5, 2), flag = wx.EXPAND)
         gbs.Add(self.fixModControl, (3, 3), (5, 2), flag = wx.EXPAND)
         gbs.Add(self.saveButton, (8, 0), (1, 5), flag = wx.EXPAND)
+        gbs.Add(self.closeButton, (9, 0), (1, 5), flag = wx.EXPAND)
         
         gbs.AddGrowableRow(5)
         
@@ -823,7 +816,7 @@ class WorkflowEditor(wx.Frame):
         #workflowFile.close()
         #workflowList.close()
         
-        workflowFile = open(os.path.join(COMET_DIR, 'workflowRecord.txt'), 'w')
+        workflowFile = open(workflow_record, 'w')
         for workflow, (fixmods, varmods) in self.workflows.items():
             fixStr = ';'.join(fixmods)
             varStr = ';'.join(varmods)
@@ -834,14 +827,15 @@ class WorkflowEditor(wx.Frame):
         self.workflowSelect.Clear()
         self.workflowSelect.AppendItems(self.workflows.keys())
         
-        #try:
+        
         self.GetParent().FindWindowByName('workFlow').Clear()
         self.GetParent().FindWindowByName('workFlow').AppendItems(self.workflows.keys())
-        #except Exception as err:
-            #print ("Couldn't change parent workflow list.  Did you appropriate "
-                   #"the workflow editor for other uses?")
-  
-        print "saveWorkFlows!"
+        
+        messdog = wx.MessageDialog(self, '%s saved.' % workflowName)
+        messdog.ShowModal()
+        
+    def OnClose(self, evt):
+        self.Close()
         
 
 def startPyComet():

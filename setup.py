@@ -16,8 +16,16 @@ except ImportError:
     print "numpy not found or not installed."
 # To find numpy-atlas.dll, possibly other things.
 
-
-#import gui
+if sys.argv[1] == 'py2exe':
+    try:
+        from openpyxl import modified_for_py2exe
+    except ImportError:
+        raise RuntimeError, ("The official openpyxl is not compatible "
+                             "with py2exe; hardcoded versions of the "
+                             "versioning constants must be added to "
+                             "openpyxl/__init__.py (and the flag "
+                             "modified_for_py2exe added, to satisfy "
+                             "this failsafe.)")
 
 
 
@@ -31,7 +39,7 @@ def get_data_files():
     base_files = []
     for filename in ['COPYING', 'COPYING.LESSER', 'README',
                      'LICENSE.txt', 'setup.nsi', 'mascot.ini',
-                     'unimod.sqlite']:
+                     'unimod.sqlite', 'MSFileReader_x86_x64_v3.0SP3.exe']:
         #filepath = os.path.join(start_dir, filename)
         #assert os.path.exists(filepath), filepath
         #base_files.append(filepath)
@@ -46,7 +54,8 @@ def get_data_files():
         #images.append(filepath)        
     #datafiles.append(('images', images))
     
-    for recursive_dir in ['pyComet', 'xTandem', 'images']:
+    for recursive_dir in ['pyComet', 'xTandem', 'images',
+                          'interface_modules']:
         for path, _, filenames in os.walk(recursive_dir):
             path_files = []
             for filename in filenames:    

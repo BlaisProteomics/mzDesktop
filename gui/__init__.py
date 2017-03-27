@@ -40,6 +40,18 @@ from multiplierz import myData, myTemp, logger_message, __version__, mzGUI_stand
 
 
 
+
+
+class Redirection():
+    def __init__(self, statusbar, stdchannel):
+        self.statusbar = statusbar
+        self.channel = stdchannel
+    def write(self, string):
+        if string.strip():
+            self.statusbar.SetStatusText(string.strip(), 1)
+        self.channel.write(string)
+
+
 #class BasicTab(wx.Panel):
 class BasicTab(PageContainer):
     '''Base class for Multiplierz tabs. A tab is just a wx.Panel with some
@@ -229,7 +241,7 @@ class AboutFrame(wx.Frame):
                  (1,0), flag=wx.ALIGN_CENTER )
 
         help_link = wx.HyperlinkCtrl(pane, -1, 'Multiplierz Wiki',
-                                     'http://sourceforge.net/apps/trac/multiplierz')
+                                     r'https://github.com/MaxAlex/multiplierz/wiki')
         help_link.SetFont(font)
         gbs.Add( help_link,
                  (2,0), flag=wx.ALIGN_CENTER )
@@ -262,7 +274,7 @@ class AboutFrame(wx.Frame):
         blais_logo.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
         blais_logo.Bind(wx.EVT_BUTTON, self.on_click_blais_logo)
 
-        dfci_text = wx.StaticText(pane, -1, 'Dana-Farber Cancer Institute, 2009-2014',
+        dfci_text = wx.StaticText(pane, -1, 'Dana-Farber Cancer Institute, 2009-2017',
                                   style=wx.ALIGN_CENTER)
         dfci_text.SetFont(font)
         gbs.Add( dfci_text,
@@ -426,6 +438,14 @@ class MultiplierzFrame(wx.Frame):
         self.statusbar.SetFieldsCount(2)
         self.statusbar.SetStatusWidths([-1,-3])
         self.statusbar.SetStatusText("Ready", 0)
+        
+        # A good idea, but will want to review all print statements to make
+        # sure they make sense in this context (instead of, e.g., 'Generating Scan.'
+        # just hanging out there while using the MS-MS View.)
+        #redirector = Redirection(self.statusbar, sys.stdout)
+        #sys.stdout = redirector
+        #redirector2 = Redirection(self.statusbar, sys.stderr)
+        #sys.stderr = redirector2
 
         self.nb = wx.Treebook(self, -1, size = (-1, -1), style = wx.NB_FIXEDWIDTH)
         self.nb.AssignImageList(wx.ImageList(1, 1)) # Makes sidebar at least so many pixels wide?
@@ -469,7 +489,7 @@ class MultiplierzFrame(wx.Frame):
                   (TransformPanel, 'Charge Transform'),
                   (IsotopePanel, 'Isotope Distribution'),
                   (LabelPanel, 'MS-MS View'),
-                  (LabelFreePanel, 'Cross-MS Quant View'),
+                  #(LabelFreePanel, 'Cross-MS Quant View'),
                   (FastaPanel, 'FASTA Tools'),
                   (MGFPanel, 'MGF Tools'),
                   (PeptidePanel, 'Peptide Prediction'),
@@ -563,22 +583,13 @@ class MultiplierzFrame(wx.Frame):
         import utilities.featureDetect as featureDetect
         detector = featureDetect.DetectorSession(None)
         detector.Show()
-        
-    def on_pycomet(self, event):
-        import pyComet.PyComet as pycomet
-        #pycometFrame = pycomet.InsertFrame(self, -1)
-        #pycometFrame.Show()
-        pycomet.startPyComet()
-        
+            
     def on_labelEv(self, event):
         import utilities.labelEvaluator as labelEv
         labelEv.LabelEvaluation(None)
         
     def on_help(self, event):
-        messdog = wx.MessageBox("Sorry- there will soon be a GitHub wiki "
-                                "and issue tracker for multiplierz/mzDesktop, "
-                                "but that's waiting for the final release!")
-        #webbrowser.open_new_tab('http://sourceforge.net/apps/trac/multiplierz')
+        webbrowser.open_new_tab(r'https://github.com/MaxAlex/multiplierz/wiki')
 
     def on_about(self, event):
         wx.Log_EnableLogging(False)
@@ -587,23 +598,43 @@ class MultiplierzFrame(wx.Frame):
         wx.Log_EnableLogging(True)
 
     def on_bugrep(self, event):
-        bug_frame = BugFrame(self)
+        webbrowser.open_new_tab(r'https://github.com/MaxAlex/multiplierz/issues')
+        #bug_frame = BugFrame(self)
         #BugFrame.Show()
 
+    def on_pycomet(self, event):
+        try:
+            import pyComet.PyComet as pycomet
+            pycomet.startPyComet()
+        except Exception as err:
+            messdog = wx.MessageDialog(self, str(err), style = wx.OK)
+            messdog.ShowModal()
+            raise err
+
     def on_xtandem(self, event):
-        import xtandem.XTandemSearch as xtandem
-        xtandem.runXTandemSearch()
-    
+        try:
+            import xtandem.XTandemSearch as xtandem
+            xtandem.runXTandemSearch()
+        except Exception as err:
+            messdog = wx.MessageDialog(self, str(err), style = wx.OK)        
+            messdog.ShowModal()
+            raise err
+        
     def on_mascot(self, event):
-        import utilities.MascotSearch as mascot
-        writeBack = lambda x: self.statusbar.SetStatusText(x, 1)
-        mascot.runMascotSearch(writeBack)
+        try:
+            import utilities.MascotSearch as mascot
+            writeBack = lambda x: self.statusbar.SetStatusText(x, 1)
+            mascot.runMascotSearch(writeBack)
+        except Exception as err:
+            messdog = wx.MessageDialog(self, str(err), style = wx.OK)        
+            messdog.ShowModal()
+            raise err        
 
 
 
 
 
-import mzGUI
+import multiplierz.mzGUI_standalone as mzGUI
 from mzDesktop import install_dir
 
 

@@ -90,8 +90,7 @@ class DeNovoPanel(BasicTab):
             outputFrame.Show()
             
         except Exception as err:
-            alert = wx.MessageBox(message = err)
-            alert.ShowModal()
+            wx.MessageBox(message = str(err))
         
             
             

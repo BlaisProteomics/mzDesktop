@@ -172,16 +172,17 @@ class p2gSession(wx.Frame):
         self.programBar.Clear()
         self.programBar.AppendText("Creating .pep2gene file...")
         self.dbmpCall.Enable(False)
-        def completionCallback(outputFile):
+        try:
+            def completionCallback(outputFile):
+                self.programBar.Clear()
+                self.programBar.AppendText("Wrote %s" % outputFile)   
+            #create_fasta_index(fastaFile, outputFile, regex)
+            async.launch_process(create_fasta_index, completionCallback,
+                                 fastaFile, outputFile, regex)
+        except Exception as err:
             self.programBar.Clear()
-            self.programBar.AppendText("Wrote %s" % outputFile)   
-            
-            
-        create_fasta_index(fastaFile, outputFile, regex)
-        #async.launch_process(create_fasta_index, completionCallback,
-                             #fastaFile, outputFile, regex)
-        
-        self.dbmpCall.Enable(True)
+        finally:
+            self.dbmpCall.Enable(True)
 
 
         print "Wrote %s ." % outputFile
@@ -198,14 +199,15 @@ class p2gSession(wx.Frame):
             self.programBar.Clear()
             self.programBar.AppendText("Annotating %s..." % target)
             self.lookupCall.Enable(False)
-            def completionCallback(outputfile):
+            try:
+                def completionCallback(outputfile):
+                    self.programBar.Clear()
+                    self.programBar.AppendText("Wrote %s" % outputfile)
+                #add_gene_ids(target, database, inPlace = False, distinguish_leucine=True)
+                async.launch_process(add_gene_ids, completionCallback,
+                                     target, database, inPlace = False, leucineAmbiguity=True)
+            except Exception as err:
                 self.programBar.Clear()
-                self.programBar.AppendText("Wrote %s" % outputfile)
-                
-            try: 
-                add_gene_ids(target, database, inPlace = False, leucineAmbiguity=True)
-                #async.launch_process(add_gene_ids, completionCallback,
-                #target, database, inPlace = False, leucineAmbiguity=True)
             finally:
                 self.lookupCall.Enable(False)
             

@@ -53,6 +53,12 @@ class IsotopePanel(BasicTab):
 
     def on_click(self, event):
         inputSequence = self.inField.GetValue()
+        if not all(x in isoDist.aminoForms for x in inputSequence):
+            messdog = wx.MessageDialog(self, "Error- invalid amino acid string: %s ." % inputSequence,
+                                       style = wx.OK)
+            messdog.ShowModal()
+            messdog.Destroy()
+            return               
         inputRecipe = isoDist.renderFormula(inputSequence)
         isotopes = isoDist.isotopicDistribution(inputRecipe)
 

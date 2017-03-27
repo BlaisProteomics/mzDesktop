@@ -1,8 +1,8 @@
 import multiplierz.fasta as fasta
 from gui import BasicTab
 import wx
-from multiplierz.mass_biochem import enzymeSpecification
-
+from multiplierz.mass_biochem import EnzymeSpecification
+from async import launch_process
 
 
 
@@ -46,10 +46,10 @@ class FastaPanel(BasicTab):
         self.forwardReverseButton = wx.Button(self, -1, "Create Forward/Reverse Database")
         
         self.pseudoReverseButton = wx.Button(self, -1, "Create Pseudo-Reverse Database")
-        self.pseudoRevEnzyme = wx.ComboBox(self, -1, value = "Trypsin", choices = enzymeSpecification.keys())
+        self.pseudoRevEnzyme = wx.ComboBox(self, -1, value = "Trypsin", choices = EnzymeSpecification.keys())
         
         self.pseudoForwardReverseButton = wx.Button(self, -1, "Create Forward/Pseudo-Reverse Database")
-        self.pseudoForwardRevEnzyme = wx.ComboBox(self, -1, value = "Trypsin", choices = enzymeSpecification.keys())
+        self.pseudoForwardRevEnzyme = wx.ComboBox(self, -1, value = "Trypsin", choices = EnzymeSpecification.keys())
         
         self.combineButton = wx.Button(self, -1, "Combine Databases")
         
@@ -94,7 +94,14 @@ class FastaPanel(BasicTab):
         self.Bind(wx.EVT_BUTTON, self.onPseudoReverse, self.pseudoReverseButton)
         self.Bind(wx.EVT_BUTTON, self.onPseudoForwardReverse, self.pseudoForwardReverseButton)
         
+
+    def toggleButtons(self, value):
+        for button in [self.chooserButton, self.selectorButton, self.reverseButton,
+                       self.forwardReverseButton, self.combineButton,
+                       self.pseudoReverseButton, self.pseudoForwardReverseButton]:
+            button.Enable(value)
         
+    
     def onChoose(self, event):
         filedialog = wx.FileDialog(parent = self, message = "Choose FASTA",
                                    wildcard = 'FASTA|*.fasta|Other|*',
@@ -127,9 +134,18 @@ class FastaPanel(BasicTab):
         self.set_status("Working...", 0)
         self.set_status("", 1)          
         for fastafile, output in zip(fastas, outputs):
-            fasta.partial_database(fastafile, output, selector)
+            #fasta.partial_database(fastafile, output, selector)
+            try:
+                self.toggleButtons(False)
+                def callback(outfile):
+                    print '\tPartial database written to %s.' % outfile
+                    self.set_status("Wrote %s" % outfile, 1)
+                launch_process(fasta.partial_database, callback,
+                               fastafile, output, selector)
+            finally:
+                self.toggleButtons(True)
         self.set_status("Ready", 0)
-        self.set_status("Done", 1)            
+                    
             
             
     def invokeReverser(self, includeForward):
@@ -141,7 +157,14 @@ class FastaPanel(BasicTab):
                                        wildcard = 'FASTA|*.fasta|Other|*',
                                        style = wx.FD_SAVE)
             if filedialog.ShowModal() == wx.ID_OK:
-                outputs.append(filedialog.GetPath())
+                filename = filedialog.GetPath()
+                if filename in fastas:
+                    messdog = wx.MessageDialog(self, "Error- selected input file %s as output." % filename,
+                                               style = wx.OK)
+                    messdog.ShowModal()
+                    messdog.Destroy()
+                    return                    
+                outputs.append(filename)
             else:
                 print "Not ID_OK"
                 return
@@ -149,9 +172,18 @@ class FastaPanel(BasicTab):
         self.set_status("Working...", 0)
         self.set_status("", 1)        
         for fastafile, output in zip(fastas, outputs):
-            fasta.reverse_database(fastafile, output, include_forward = includeForward)    
+            #fasta.reverse_database(fastafile, output, include_forward = includeForward)   
+            try:
+                self.toggleButtons(False)
+                def callback(outfile):
+                    print '\tReverse database written to %s.' % outfile
+                    self.set_status("Wrote %s" % outfile, 1)
+                launch_process(fasta.reverse_database, callback,
+                               fastafile, output, include_forward = includeForward)
+            finally:
+                self.toggleButtons(True)
         self.set_status("Ready", 0)
-        self.set_status("Done", 1)          
+                  
             
     def onReverse(self, event):
         self.invokeReverser(False)
@@ -169,7 +201,14 @@ class FastaPanel(BasicTab):
                                        wildcard = 'FASTA|*.fasta|Other|*',
                                        style = wx.FD_SAVE)
             if filedialog.ShowModal() == wx.ID_OK:
-                outputs.append(filedialog.GetPath())
+                filename = filedialog.GetPath()
+                if filename in fastas:
+                    messdog = wx.MessageDialog(self, "Error- selected input file %s as output." % filename,
+                                               style = wx.OK)
+                    messdog.ShowModal()
+                    messdog.Destroy()
+                    return                    
+                outputs.append(filename)
             else:
                 print "Not ID_OK"
                 return
@@ -177,9 +216,17 @@ class FastaPanel(BasicTab):
         self.set_status("Working...", 0)
         self.set_status("", 1)        
         for fastafile, output in zip(fastas, outputs):
-            fasta.pseudo_reverse(fastafile, output, enzyme = enzyme)    
+            #fasta.pseudo_reverse(fastafile, output, enzyme = enzyme)
+            try:
+                self.toggleButtons(False)
+                def callback(outfile):
+                    print '\tReverse database written to %s.' % outfile
+                    self.set_status("Wrote %s" % outfile, 1)
+                launch_process(fasta.pseudo_reverse, callback,
+                               fastafile, output, enzyme = enzyme)
+            finally:
+                self.toggleButtons(True)            
         self.set_status("Ready", 0)
-        self.set_status("Done", 1) 
         
     def onPseudoForwardReverse(self, event):
         fastas = self.chooserCtrl.GetValue().split(';')
@@ -191,7 +238,14 @@ class FastaPanel(BasicTab):
                                        wildcard = 'FASTA|*.fasta|Other|*',
                                        style = wx.FD_SAVE)
             if filedialog.ShowModal() == wx.ID_OK:
-                outputs.append(filedialog.GetPath())
+                filename = filedialog.GetPath()
+                if filename in fastas:
+                    messdog = wx.MessageDialog(self, "Error- selected input file %s as output." % filename,
+                                               style = wx.OK)
+                    messdog.ShowModal()
+                    messdog.Destroy()
+                    return                    
+                outputs.append(filename)
             else:
                 print "Not ID_OK"
                 return
@@ -199,9 +253,17 @@ class FastaPanel(BasicTab):
         self.set_status("Working...", 0)
         self.set_status("", 1)        
         for fastafile, output in zip(fastas, outputs):
-            fasta.pseudo_reverse(fastafile, output, enzyme = enzyme, include_forward = True)    
+            #fasta.pseudo_reverse(fastafile, output, enzyme = enzyme, include_forward = True)  
+            try:
+                self.toggleButtons(False)
+                def callback(outfile):
+                    print '\tReverse database written to %s.' % outfile
+                    self.set_status("Wrote %s" % outfile, 1)
+                launch_process(fasta.pseudo_reverse, callback,
+                               fastafile, output, enzyme = enzyme, include_forward = True)
+            finally:
+                self.toggleButtons(True)               
         self.set_status("Ready", 0)
-        self.set_status("Done", 1)        
         
     def onCombine(self, event):
         fastas = [x.strip() for x in self.chooserCtrl.GetValue().split(';')]
@@ -217,6 +279,14 @@ class FastaPanel(BasicTab):
         
         self.set_status("Working...", 0)
         self.set_status("", 1)
-        fasta.combine(fastas, output)
+        #fasta.combine(fastas, output)
+        try:
+            self.toggleButtons(False)
+            def callback(outfile):
+                print '\tCombined database written to %s.' % outfile
+                self.set_status("Wrote %s" % outfile, 1)
+            launch_process(fasta.combine, callback,
+                           fastas, output)
+        finally:
+            self.toggleButtons(True)         
         self.set_status("Ready", 0)
-        self.set_status("Done", 1)            

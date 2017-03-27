@@ -19,7 +19,7 @@
 import wx
 import re
 
-import mzGUI
+import mzGUI_standalone as mzGUI
 
 import mzDesktop
 
@@ -38,6 +38,7 @@ class PreferencesFrame(wx.Frame):
         listbook.AssignImageList(wx.ImageList(60, 1))
 
         self.loggerVerbosity = LoggerVerbosityPage(listbook)
+        self.cometTandemPaths = CometAndTandemPage(listbook, parent)
         self.mascotServer = MascotServerPage(listbook, parent)
         self.reportSettingsPage = ReportSettingsPage(listbook)
         self.peakViewer = PeakViewerPage(listbook)
@@ -45,6 +46,7 @@ class PreferencesFrame(wx.Frame):
         self.mzServerSettings = mzServerSettingsPage(listbook)
         
         listbook.AddPage(self.loggerVerbosity, "Logger Verbosity")
+        listbook.AddPage(self.cometTandemPaths, "Comet & Tandem Paths")
         listbook.AddPage(self.mascotServer, "Mascot Server")
         listbook.AddPage(self.reportSettingsPage, "Report Settings")
         listbook.AddPage(self.peakViewer, "Peak Viewer")
@@ -85,6 +87,7 @@ class PreferencesFrame(wx.Frame):
     def justSet(self, event):
         self.loggerVerbosity.on_set_level(event)
         self.mascotServer.on_set_server(event)
+        self.cometTandemPaths.on_set_paths(event)
         self.reportSettingsPage.on_set_size(event)
         self.peakViewer.on_set_params(event)
         self.mzResultsSettings.on_set_params(event)
@@ -307,6 +310,54 @@ class MascotServerPage(wx.Panel):
         
     def justClose(self, event):
         self.GetParent().GetParent().Destroy()
+        
+        
+class CometAndTandemPage(wx.Panel):
+    def __init__(self, parent, mainFrame):
+        wx.Panel.__init__(self, parent, -1)
+        self.mainFrame = mainFrame
+        gbs = wx.GridBagSizer(10, 10)
+        
+        cometLabel = wx.StaticText(self, -1, "Path To Comet Executable")
+        self.cometCtrl = wx.TextCtrl(self, -1, mzDesktop.settings.get_comet())
+        self.cometBrowse = wx.Button(self, -1, "Browse")
+        
+        xtandemLabel = wx.StaticText(self, -1, "Path To XTandem Executable")
+        self.xtandemCtrl = wx.TextCtrl(self, -1, mzDesktop.settings.get_xtandem())
+        self.xtandemBrowse = wx.Button(self, -1, "Browse")
+        
+        self.Bind(wx.EVT_BUTTON, self.onCBrowse, self.cometBrowse)
+        self.Bind(wx.EVT_BUTTON, self.onXTBrowse, self.xtandemBrowse)
+        
+        gbs.Add(cometLabel, (0, 0))
+        gbs.Add(self.cometCtrl, (1, 0), span = (1, 2), flag = wx.EXPAND)
+        gbs.Add(self.cometBrowse, (1, 2))
+        gbs.Add(xtandemLabel, (3, 0))
+        gbs.Add(self.xtandemCtrl, (4, 0), span = (1, 2), flag = wx.EXPAND)
+        gbs.Add(self.xtandemBrowse, (4, 2))
+        
+        gbs.AddGrowableCol(1)
+        
+        overbox = wx.BoxSizer()
+        overbox.Add(gbs, 1, wx.ALL, 15)
+        self.SetSizerAndFit(overbox)
+        
+        
+    def onCBrowse(self, evt):
+        comet = mzGUI.file_chooser('Select Comet Executable', mode = 'r',
+                                   wildcard = '*.exe')
+        self.cometCtrl.SetValue(comet)
+        
+    def onXTBrowse(self, evt):
+        tandem = mzGUI.file_chooser('Select X! Tandem Executable', mode = 'r',
+                                    wildcard = '*.exe')
+        self.xtandemCtrl.SetValue(tandem)
+        
+    def on_set_paths(self, evt):
+        mzDesktop.settings.set_comet(self.cometCtrl.GetValue())
+        mzDesktop.settings.set_xtandem(self.xtandemCtrl.GetValue())
+        
+        
         
 class ReportSettingsPage(wx.Panel):
     def __init__(self, parent):

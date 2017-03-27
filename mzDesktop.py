@@ -17,7 +17,7 @@
 # along with multiplierz.  If not, see <http://www.gnu.org/licenses/>.
 
 __author__ = 'Jignesh Parikh, James Webber, William Max Alexander'
-__version__ = '1.9'
+__version__ = '2.0'
 
 
 import os
@@ -28,7 +28,7 @@ import time
 import wx
 
 import matplotlib
-matplotlib.use('WXAgg') # Prevents an obscure error that sometimes crops up in the executable.
+matplotlib.use('WXAgg') # Prevents an obscure error that sometimes crops up.
 
 #import win32api
 #_exe_name = win32api.GetModuleFileName(win32api.GetModuleHandle(None))
@@ -106,21 +106,28 @@ if __name__ == '__main__':
         main_frame = None
 
         arg = sys.argv[1]
-        arg_ext = os.path.splitext(arg)[1]
-
-        if arg_ext == '.mzd':
-            app = wx.App(False)
-            _icon = wx.Icon(_exe_name, wx.BITMAP_TYPE_ICO)
-
-            logger_message(60, 'Loading mzResults...')
-
-            from gui.report_viewer import ReportViewer
-
-            report_viewer = ReportViewer(None, arg)
-            report_viewer.SetIcon(_icon)
-            report_viewer.Show()
-
-            app.MainLoop()
+        
+        if arg == '--run_register_interfaces':
+            print "PERFORMING MZAPI SETUP"
+            from multiplierz.mzAPI.management import registerInterfaces
+            registerInterfaces()
+            print "Setup complete; exiting."
+        else:
+            arg_ext = os.path.splitext(arg)[1]
+    
+            if arg_ext == '.mzd':
+                app = wx.App(False)
+                _icon = wx.Icon(_exe_name, wx.BITMAP_TYPE_ICO)
+    
+                logger_message(60, 'Loading mzResults...')
+    
+                from gui.report_viewer import ReportViewer
+    
+                report_viewer = ReportViewer(None, arg)
+                report_viewer.SetIcon(_icon)
+                report_viewer.Show()
+    
+                app.MainLoop()
     else:
         app = wx.App(False)
 

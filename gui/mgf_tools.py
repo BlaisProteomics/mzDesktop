@@ -1,7 +1,8 @@
 import multiplierz.spectral_process as s_p
+import multiplierz.mgf as mgf
 from gui import BasicTab
 import wx
-
+from async import launch_process
 
 
 reduceChargeTooltip = ("This algorithm attempts to determine the charge state "
@@ -293,20 +294,33 @@ class MGFPanel(BasicTab):
         if scantype == 'All':
             scantype = None
         
-        inputs = [x.strip() for x in inputfile.split('"') if x] # Right?
-        if len(inputs) > 1 and outputfile:
-            raise IOError, "Ambigous outputfile selection!"
+        inputs = [x.strip() for x in inputfile.split(',') if x] # Right?
+        #if len(inputs) > 1 and outputfile:
+            #raise IOError, "Ambigous outputfile selection!"
         if outputfile:
-            outputs = [outputfile]
+            outputs = outputs = [x.strip() for x in outputfile.split(',') if x]
         else:
             outputs = [x + '.mgf' for x in inputs]
         
-        assert len(inputs) == len(outputs), "Input files do not match outputs!"
+        if len(inputs) != len(outputs):
+            messdog = wx.MessageDialog(self, "Input files do not match outputs!",
+                                       style = wx.OK)
+            messdog.ShowModal()
+            messdog.Destroy()
+            return
         
         for infile, outfile in zip(inputs, outputs):
             print "Extracting spectra from %s..." % infile
-            mgf.extract(infile, outputfile = outfile, centroid = centroid)
-            print "\tSpectra extracted to %s" % outfile
+            #mgf.extract(infile, outputfile = outfile, centroid = centroid)
+            try:
+                self.convertButton.Enable(False)
+                def callback(results):
+                    print "\tExtracted spectra to %s" % results
+                launch_process(mgf.extract, callback = callback,
+                               datafile = infile, outputfile = outfile,
+                               centroid = centroid)
+            finally:
+                self.convertButton.Enable(True)
         
         print "Done."
         
@@ -327,19 +341,35 @@ class MGFPanel(BasicTab):
                     
         
         if not processes:
-            raise IOError, "No spectral processing selected!"
-        
-        processes.sort(key = lambda x: x[0])
+            messdog = wx.MessageDialog(self, "No processing steps selected!",
+                                       style = wx.OK)
+            messdog.ShowModal()
+            messdog.Destroy()
+            return
         
         infiles = [x.strip() for x in self.processInputCtrl.GetValue().split(',')]
         outfiles = [x.strip() for x in self.processOutputCtrl.GetValue().split(',')]
-        assert len(infiles) == len(outfiles), "Inequal input and output length!"
+        if len(infiles) != len(outfiles):
+            messdog = wx.MessageDialog(self, "Input files do not match outputs!",
+                                       style = wx.OK)
+            messdog.ShowModal()
+            messdog.Destroy()
+            return
         
+        processes.sort(key = lambda x: x[0])
         functions = [(x[1], x[2]) for x in processes]
         for infile, outfile in zip(infiles, outfiles):
             print "Processing %s..." % infile
-            mgf.applySpectralProcess(infile, functions, outputFile = outfile)
-            print "\tProcessed file written to %s" % outfile
+            #mgf.apply_spectral_process(infile, functions, outputFile = outfile)
+            try:
+                self.processButton.Enable(False)
+                def callback(outfile):
+                    print "\tProcessed file written to %s" % outfile
+                launch_process(mgf.apply_spectral_process, callback,
+                               infile, functions, outputFile = outfile)
+            finally:
+                self.processButton.Enable(True)
+                
         
         print "Done."
     

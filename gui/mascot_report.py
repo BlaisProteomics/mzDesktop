@@ -20,7 +20,8 @@ import wx
 import os
 
 
-from multiplierz.mzSearch.mascot.report import retrieveMascotReport
+#from multiplierz.mzSearch.mascot.report import retrieveMascotReport
+from multiplierz.mzSearch.mascot_search import retrieveMascotReport
 from multiplierz.post_process import calculate_FDR, combine_accessions
 
 from mzDesktop import myData, settings, install_dir

@@ -23,7 +23,7 @@ from multiplierz.mzSearch.mascot.report import MascotReport
 
 #from multiplierz.mzAPI import find_mz_file
 #from mzDesktop import find_mz_file
-from mzGUI import report_chooser
+from multiplierz.mzGUI_standalone import report_chooser
 
 import mzDesktop
 

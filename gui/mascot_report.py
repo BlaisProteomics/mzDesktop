@@ -322,54 +322,55 @@ class MascotReportPanel(BasicTab):
         else:
             extension = settings.default_format                    
     
-        results = retrieveMascotReport(mascot_ids = new_id_list,
-                                       dat_file_list = dat_file_list,
-                                       chosen_folder = self.folder_text.GetValue(),
-                                       mascot_server = settings.mascot_server,
-                                       mascot_version = settings.mascot_version,
-                                       combined_file = False,
-                                       rank_one = self.rank_one_ck.GetValue(),
-                                       max_hits = int(self.max_hits_text.GetValue()),
-                                       ion_cutoff = float(self.ion_cutoff_text.GetValue()),
-                                       bold_red = self.bold_red_ck.IsChecked(),
-                                       show_query_data = self.show_query_ck.IsChecked(),
-                                       show_same_set = self.same_sets_ck.IsChecked(),
-                                       show_sub_set = self.sub_sets_ck.IsChecked(),
-                                       #genbank = self.genbank_ck.GetValue(),
-                                       protein_report = self.prot_report.GetValue(),
-                                       quant = self.quant_ck.IsChecked(),
-                                       ext = extension,
-                                       login_name = self.login_text.GetValue(),
-                                       password = self.password_text.GetValue(),
-                                       keep_dat = self.keep_dat.IsChecked(),
-                                       pep2gene = self.p2gField.GetValue() if self.p2gCheck.GetValue() else None
-                                       )
+        try:
+            results = retrieveMascotReport(mascot_ids = new_id_list,
+                                           dat_file_list = dat_file_list,
+                                           chosen_folder = self.folder_text.GetValue(),
+                                           mascot_server = settings.mascot_server,
+                                           mascot_version = settings.mascot_version,
+                                           combined_file = False,
+                                           rank_one = self.rank_one_ck.GetValue(),
+                                           max_hits = int(self.max_hits_text.GetValue()),
+                                           ion_cutoff = float(self.ion_cutoff_text.GetValue()),
+                                           bold_red = self.bold_red_ck.IsChecked(),
+                                           show_query_data = self.show_query_ck.IsChecked(),
+                                           show_same_set = self.same_sets_ck.IsChecked(),
+                                           show_sub_set = self.sub_sets_ck.IsChecked(),
+                                           #genbank = self.genbank_ck.GetValue(),
+                                           protein_report = self.prot_report.GetValue(),
+                                           quant = self.quant_ck.IsChecked(),
+                                           ext = extension,
+                                           login_name = self.login_text.GetValue(),
+                                           password = self.password_text.GetValue(),
+                                           keep_dat = self.keep_dat.IsChecked(),
+                                           pep2gene = self.p2gField.GetValue() if self.p2gCheck.GetValue() else None
+                                           )
         
         
-        if self.combine_accessions.GetValue():
-            print "Combining redundant peptide reports..."
-            for result in results:
-                combine_accessions(result)
-            print "Combining completed."
+            if self.combine_accessions.GetValue():
+                print "Combining redundant peptide reports..."
+                for result in results:
+                    combine_accessions(result)
+                print "Combining completed."
+            
+            if self.perform_FDR.GetValue():
+                print "Performing FDR calculation..."
+                for result in results:
+                    calculate_FDR(result) # Will probably want to include a way to change defaults eventually.
+                print "FDR completed."
+                self.set_status("Done", 1)
+        except Exception as err:
+            errBox = wx.MessageBox(str(err), "An Error Occurred.")
+            import traceback
+            print traceback.format_exc()
+        finally:
+            # hide hourglass
+            wx.EndBusyCursor()
         
-        if self.perform_FDR.GetValue():
-            print "Performing FDR calculation..."
-            for result in results:
-                calculate_FDR(result) # Will probably want to include a way to change defaults eventually.
-            print "FDR completed."
-        
-        #except Exception as err:
-            #errBox = wx.MessageBox(str(err), "An Error Occurred.")
-            #import traceback
-            #print traceback.format_exc()
-        
-        # hide hourglass
-        wx.EndBusyCursor()
-
         # update statusbar
         print "Done."
         self.set_status("Ready", 0)
-        self.set_status("Done", 1)        
+                
                 
             
         

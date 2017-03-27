@@ -123,16 +123,27 @@ class DigestPanel(BasicTab):
 
         data = []
         for (i, protein) in enumerate(proteins):
-            digests = digest(protein, enzyme, missed_cleavages)
+            try:
+                digests = digest(protein, enzyme, missed_cleavages)
+            except Exception as err:
+                wx.MessageBox('Error while parsing protein entry: %s' % protein,
+                              "An error occurred.")
+                raise err                
+            
             header = headers[i]
             for (j, dig) in enumerate(digests):
                 pep = digests[j][0]
                 range = digests[j][1]
                 m_c = digests[j][2]
-                oneMass = "%0.3f" % mz(pep,[],1)
-                twoMass = "%0.3f" % mz(pep,[],2)
-                threeMass = "%0.3f" % mz(pep,[],3)
-                data.append((header, pep, range, m_c, oneMass, twoMass, threeMass))
+                try:
+                    oneMass = "%0.3f" % mz(pep,[],1)
+                    twoMass = "%0.3f" % mz(pep,[],2)
+                    threeMass = "%0.3f" % mz(pep,[],3)
+                    data.append((header, pep, range, m_c, oneMass, twoMass, threeMass))
+                except Exception as err:
+                    wx.MessageBox('Error while parsing peptide substring: %s' % pep,
+                                  "An error occurred.")
+                    raise err
 
 
         if self.writeToggleCk.GetValue():

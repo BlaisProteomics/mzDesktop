@@ -313,10 +313,12 @@ class MultiplierzFrame(wx.Frame):
         menu_bar = wx.MenuBar()
 
         file_menu = wx.Menu()
-
-        peak_viewer = file_menu.Append(-1, "&Open MS Data File\tCtrl+O",
-                                       "Interactive Peak Viewer")
-        self.Bind(wx.EVT_MENU, self.on_peak_viewer, peak_viewer)
+        
+        # Removed due mostly to matplotlib 'recapturing mouse' errors and
+        # a few bugs from changed legacy code.
+        #peak_viewer = file_menu.Append(-1, "&Open MS Data File\tCtrl+O",
+                                       #"Interactive Peak Viewer")
+        #self.Bind(wx.EVT_MENU, self.on_peak_viewer, peak_viewer)
 
         report_viewer = file_menu.Append(-1, "Open &Multiplierz Report\tCtrl+M",
                                          "Report Viewer")

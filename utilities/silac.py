@@ -1,4 +1,4 @@
-from multiplierz.mzTools.silacAnalysis import SILAC2Plex, SILAC3Plex, SILAC2Plex_multiRAW, SILAC3Plex_multiRAW
+from multiplierz.mzTools.silacAnalysis import SILAC2Plex, SILAC3Plex
 from multiplierz.mzReport import reader
 from regex import RegexHelper
 import wx
@@ -321,32 +321,15 @@ class SILACSession(wx.Frame):
             self.goButton.Enable(False)
             
             if PLEXITY == 3:
-                async.launch_process(SILAC3Plex_multiRAW, None, 
+                async.launch_process(SILAC3Plex, None, 
                                      dataFiles, fileNames, mediumTags = [mediumK, mediumR],
                                      heavyTags = [heavyK, heavyR], **constantsDict)
             else:
-                async.launch_process(SILAC2Plex_multiRAW, None,
+                async.launch_process(SILAC2Plex, None,
                                      dataFiles, fileNames, heavyTags = [heavyK, heavyR],
                                      **constantsDict)            
                 
-            self.goButton.Enable(True)
-            
-            #if combined:
-            #if PLEXITY == 3:
-                #SILAC3Plex_multiRAW(dataFiles, fileNames, mediumTags = [mediumK, mediumR],
-                                    #heavyTags = [heavyK, heavyR], **constantsDict)
-            #else:
-                #SILAC2Plex_multiRAW(dataFiles, fileNames, heavyTags = [heavyK, heavyR],
-                                    #**constantsDict)
-            #else:
-                #assert len(dataFiles) == 1
-                #datafile = dataFiles[0]
-                #if PLEXITY == 3:
-                    #SILAC3Plex(datafile, fileNames, mediumTags = [mediumK, mediumR],
-                               #heavyTags = [heavyK, heavyR], **constantsDict)
-                #else:
-                    #SILAC2Plex(datafile, fileNames, heavyTags = [heavyK, heavyR],
-                               #**constantsDict)                
+            self.goButton.Enable(True)             
         finally:
             wx.EndBusyCursor()
                 

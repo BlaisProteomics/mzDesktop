@@ -74,7 +74,7 @@ class InsertFrame(wx.Frame):
         self.jobID = 0
         self.workflow_list = self.read_workflow_list()
         self.workflow = self.read_workflow()        
-        wx.Frame.__init__(self,parent,id, 'PyComet 64 bit 0.0.7', size =(580,660), pos = (50,50))
+        wx.Frame.__init__(self,parent,id, 'Submit Comet Search', size =(580,660), pos = (50,50))
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         panel = wx.Panel(self)
         nb = wx.Notebook(panel, size=(600,600), pos= (10,10))

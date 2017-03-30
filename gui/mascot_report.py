@@ -123,9 +123,9 @@ class MascotReportPanel(BasicTab):
         self.show_query_ck = wx.CheckBox(self, -1, "Show Input Query Data ", style=wx.ALIGN_RIGHT)
         self.show_query_ck.SetValue(True)
 
-        self.quant_ck = wx.CheckBox(self, -1, "Peptide Quantitation ", style=wx.ALIGN_RIGHT)
-        if settings.mascot_version < '2.2':
-            self.quant_ck.Enable(False)
+        #self.quant_ck = wx.CheckBox(self, -1, "Peptide Quantitation ", style=wx.ALIGN_RIGHT)
+        #if settings.mascot_version < '2.2':
+            #self.quant_ck.Enable(False)
 
         #self.genbank_ck = wx.CheckBox(self, -1, "Include GenBank Info ", style=wx.ALIGN_RIGHT)
         
@@ -137,7 +137,7 @@ class MascotReportPanel(BasicTab):
 
         for i,ck_box in enumerate((self.bold_red_ck,
                                    self.show_query_ck,
-                                   self.quant_ck,
+                                   #self.quant_ck,
                                    #self.genbank_ck,
                                    self.combine_accessions,
                                    self.perform_FDR)):
@@ -158,7 +158,7 @@ class MascotReportPanel(BasicTab):
 
         self.rank_one_ck = wx.CheckBox(self, -1, "First Rank Peptides Only ", style=wx.ALIGN_RIGHT)
 
-        self.prot_report = wx.CheckBox(self, -1, "Protein-Level Summary ", style=wx.ALIGN_RIGHT)
+        #self.prot_report = wx.CheckBox(self, -1, "Protein-Level Summary ", style=wx.ALIGN_RIGHT)
         
         self.keep_dat = wx.CheckBox(self, -1, "Retain Local .DAT File", style=wx.ALIGN_RIGHT)
         
@@ -166,7 +166,7 @@ class MascotReportPanel(BasicTab):
         for i,ck_box in enumerate((self.same_sets_ck,
                                    self.sub_sets_ck,
                                    self.rank_one_ck,
-                                   self.prot_report,
+                                   #self.prot_report,
                                    self.keep_dat)):
             gbs.Add( ck_box,
                      (i+9,4), flag=wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL )
@@ -181,8 +181,10 @@ class MascotReportPanel(BasicTab):
         #gbs.AddGrowableRow(9,1)
         #gbs.AddGrowableRow(14,1)
 
-        box = wx.BoxSizer()
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        box.AddSpacer(100)
         box.Add(gbs, 1, wx.ALL|wx.EXPAND, 20)
+        box.AddSpacer(200)
 
         self.load_control_settings()
         self.GetParent().GetParent().Bind(wx.EVT_CLOSE,
@@ -199,12 +201,12 @@ class MascotReportPanel(BasicTab):
         self.p2gCheck.SetValue(controlValues['p2g'])
         self.bold_red_ck.SetValue(controlValues['bold red'])
         self.show_query_ck.SetValue(controlValues['show input query'])
-        self.quant_ck.SetValue(controlValues['pep quant'])
+        #self.quant_ck.SetValue(controlValues['pep quant'])
         #self.genbank_ck.SetValue(controlValues['genbank'])
         self.same_sets_ck.SetValue(controlValues['same-set hits'])
         self.sub_sets_ck.SetValue(controlValues['sub-set hits'])
         self.rank_one_ck.SetValue(controlValues['rank one only'])
-        self.prot_report.SetValue(controlValues['protein summary'])
+        #self.prot_report.SetValue(controlValues['protein summary'])
         self.keep_dat.SetValue(controlValues['retain DAT'])
         
     

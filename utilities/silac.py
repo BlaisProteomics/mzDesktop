@@ -14,7 +14,7 @@ unimod = None
 
 class SILACSession(wx.Frame):
     def __init__(self, parent, title):
-        super(SILACSession, self).__init__(parent, title=title, size = (700, 700))
+        super(SILACSession, self).__init__(parent, title=title, size = (700, 720))
         
         panel = wx.Panel(self)
         #featureBox = wx.StaticBox(panel, -1)

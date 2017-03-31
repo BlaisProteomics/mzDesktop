@@ -110,6 +110,9 @@ class MascotPanel(wx.Frame):
         dbaseLabel, self.dbaseCtrl = checkCtrl('Database', self.DATABASES)
         fixmodLabel, self.fixmodCtrl = checkCtrl('Fixed\nModifications', self.SHORTMODS, (50, 200))
         varmodLabel, self.varmodCtrl = checkCtrl('Variable\nModifications', self.SHORTMODS, (50, 200))
+        self.Bind(wx.EVT_CHECKLISTBOX, self.updateTooltips, self.dbaseCtrl)
+        self.Bind(wx.EVT_CHECKLISTBOX, self.updateTooltips, self.fixmodCtrl)
+        self.Bind(wx.EVT_CHECKLISTBOX, self.updateTooltips, self.varmodCtrl)
         
         enzymeLabel, self.enzymeCtrl = choiceCtrl('Enzyme', self.ENZYMES)
         quantLabel, self.quantCtrl = choiceCtrl('Quantitation', self.QUANTS)
@@ -224,6 +227,7 @@ class MascotPanel(wx.Frame):
             self.loadPar(None, default_parfile)
         
         self.toggleSearchMode(None)
+        self.updateTooltips(None)
         self.Show()
         
     def getMascotValues(self):
@@ -277,12 +281,18 @@ class MascotPanel(wx.Frame):
                     continue
                 if isinstance(ctrl, wx.CheckListBox):
                     values = [x.strip() for x in value.split(',') if x]
-                    ctrl.SetCheckedStrings(values)
+                    try:
+                        ctrl.SetCheckedStrings(values)
+                    except AssertionError as err:
+                        print 'Exception- %s (in %s)' % (str(err), ctrl.Name)
                 elif isinstance(ctrl, wx.CheckBox):
                     if key == 'MASS':
                         ctrl.SetValue(value == 'AVERAGE')
                     else:
-                        ctrl.SetValue(float(value))
+                        if value:
+                            ctrl.SetValue(float(value))
+                        else:
+                            ctrl.SetValue(False)
                 elif isinstance(ctrl, wx.Choice):
                     num = ctrl.FindString(value)
                     if num >= 0:
@@ -293,6 +303,7 @@ class MascotPanel(wx.Frame):
                 else:
                     ctrl.SetValue(value)
 
+        self.updateTooltips(None)
         print "Loaded parfile."
         
     def collectParameters(self):
@@ -326,6 +337,8 @@ class MascotPanel(wx.Frame):
         print "Saved parfile."
             
     def swapModLists(self, event):
+        fixmods = self.fixmodCtrl.GetCheckedStrings()
+        varmods = self.varmodCtrl.GetCheckedStrings()
         self.fixmodCtrl.Clear()
         self.varmodCtrl.Clear()
         if self.modMenu_allMods.IsChecked():
@@ -334,8 +347,44 @@ class MascotPanel(wx.Frame):
             mods = self.SHORTMODS
         for mod in mods:
             self.fixmodCtrl.Append(mod)
-            self.varmodCtrl.Append(mod)    
+            self.varmodCtrl.Append(mod) 
+        
+        abandonFixed = []
+        for fixmod in fixmods:
+            index = self.fixmodCtrl.FindString(fixmod)
+            if index == -1:
+                abandonFixed.append(fixmod)
+            else:
+                self.fixmodCtrl.Check(index)
+        abandonVar = []
+        for varmod in varmods:
+            index = self.varmodCtrl.FindString(varmod)
+            if index == -1:
+                abandonVar.append(varmod)
+            else:
+                self.varmodCtrl.Check(index)
+        
+        if abandonFixed or abandonVar:
+            if abandonFixed:
+                fixstr = '\nFixed Mods;\n%s\n' % '\n'.join(abandonFixed)
+            else:
+                fixstr = ''
+            if abandonVar:
+                varstr = '\nVariable Mods;\n%s' % '\n'.join(abandonVar)
+            else:
+                varstr = ''
+            wx.MessageBox('NOTE- some modifications have been dropped;\n%s %s' % (fixstr, varstr))
+        
+        self.updateTooltips(None)
     
+    def updateTooltips(self, event):
+        for ctrl in [self.fixmodCtrl, self.varmodCtrl, self.dbaseCtrl]:
+            if event and ctrl != event.GetEventObject():
+                continue
+        
+            tipstr = '\n'.join(sorted(ctrl.GetCheckedStrings()))
+            ctrl.SetToolTip(wx.ToolTip(tipstr))
+            
     def onClose(self, event):
         self.savePar(None, default_parfile)
         self.Destroy()
@@ -376,9 +425,11 @@ class MascotPanel(wx.Frame):
         finally:
             wx.EndBusyCursor()
             self.goButton.Enable(True)         
-            
+        
         if not (self.downloadSearch.GetValue() and dat_id):
-            return
+            if dat_id:
+                wx.MessageBox("Successfully submitted search; search log # %s" % dat_id)
+                return
         
         try:
             wx.BeginBusyCursor()

@@ -269,7 +269,7 @@ class MascotServerPage(wx.Panel):
             mascot_web_page.mod_ck.Enable(True)
             mascot_web_page.mod_ck.SetValue(True)
         else:
-            mascot_report_page.quant_ck.Enable(True)
+            #mascot_report_page.quant_ck.Enable(True)
             mascot_web_page.mod_ck.Enable(not mascotVarMods)
             mascot_web_page.mod_ck.SetValue(not mascotVarMods)
 

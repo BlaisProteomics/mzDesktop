@@ -238,7 +238,10 @@ def modNamesToAADeltaStr(mods):
         try:
             shift = mod_masses[modname]
         except KeyError:
-            shift = unimod.get_mod_delta(modname)
+            try:
+                shift = float(modname)
+            except ValueError:            
+                shift = unimod.get_mod_delta(modname)
         
         for aa in aas:
             aashifts[aa] += shift
@@ -253,6 +256,9 @@ def modNamesToAADeltaStr(mods):
 # There's no information about the actual source of the mod
 # masses in the xtandem parameter file!
 def aaDeltaStrToMods(deltaStr):
+    if not deltaStr:
+        return []
+    
     mods = []
     for substr in deltaStr.split(','):
         substr = substr.strip()
@@ -348,12 +354,12 @@ class XTandemSearch(wx.Frame):
         
         #self.fixmodLabel = wx.TextBox(self, -1, "Fixed Modifications")
         self.fixmodCtrl = wx.CheckListBox(pane, -1, choices = fixmods,
-                                          style = wx.LB_SORT,
+                                          #style = wx.LB_SORT,
                                           name = 'Fixed\nModifications',
                                           size = (-1, 100))
         #self.varmodLabel = wx.TextBox(self, -1, "Variable Modifications")
         self.varmodCtrl = wx.CheckListBox(pane, -1, choices = varmods,
-                                          style = wx.LB_SORT,
+                                          #style = wx.LB_SORT,
                                           name = 'Variable\nModifications',
                                           size = (-1, 100))
         
@@ -790,7 +796,8 @@ class XTandemSearch(wx.Frame):
                         varmods.append(line)
                     else:
                         raise Exception
-    
+        fixmods.sort()
+        varmods.sort()
     
     
     def browse(self, event):
@@ -889,14 +896,26 @@ class XTandemSearch(wx.Frame):
         searchObj = TandemSearch()
         self.GUItoParObj(searchObj)
         
-        originalObject = TandemSearch(self.parCtrl.GetValue())
+        saveFileName = self.parCtrl.GetValue()
+        if os.path.exists(saveFileName):
+            originalObject = TandemSearch(saveFileName)
+        else:
+            originalObject = None
         
         if dict(searchObj) != originalObject:
-            print "IMPLEMENT CONFIRMATION DIALOG HERE!"
-            
-            searchObj.write(outputfile = self.parCtrl.GetValue())
+            if not os.path.exists(saveFileName):
+                searchObj.write(outputfile = saveFileName)  
+                wx.MessageBox("Wrote %s ." % saveFileName)
+            else:
+                messdog = wx.MessageDialog(self, "Overwrite %s?" % saveFileName,
+                                           style = wx.OK|wx.CANCEL)
+                if messdog.ShowModal() == wx.ID_OK:
+                    searchObj.write(outputfile = saveFileName)
+                    wx.MessageBox("Wrote %s ." % saveFileName)
         else:
-            print "ALERT USER TO UNCHANGED FILE HERE!"
+            messdog = wx.MessageDialog(self, "Parameter file unchanged.",
+                                       style = wx.OK)
+            messdog.ShowModal()
     
      
     def parObjToGUI(self, parameterfile):
@@ -921,7 +940,11 @@ class XTandemSearch(wx.Frame):
             
             assert ctrl     
             
-            parvalue = searchObj[category][parameter]
+            try:
+                parvalue = searchObj[category][parameter]
+            except KeyError:
+                print "Value for %s-%s not found." % (category, parameter)
+                continue
             
             if parvalue:
                 if isinstance(ctrl, wx.CheckBox):
@@ -954,15 +977,21 @@ class XTandemSearch(wx.Frame):
         for mass, site in fixmods:
             modstring = '%f (%s)' % (mass, site)
             self.fixmodCtrl.Insert(modstring, 0)
+            self.fixmodCtrl.Check(0)
         for mass, site in varmods:
             modstring = '%f (%s)' % (mass, site)
             self.varmodCtrl.Insert(modstring, 0)
-        for mass, site in refinefixmods:
-            modstring = '%f (%s)' % (mass, site)
-            self.refineFixMods.Insert(modstring, 0)
-        for mass, site in refinevarmods:
-            modstring = '%f (%s)' % (mass, site)
-            self.refineVarMods.Insert(modstring, 0)        
+            self.varmodCtrl.Check(0)
+        if refinefixmods: # Can be None
+            for mass, site in refinefixmods:
+                modstring = '%f (%s)' % (mass, site)
+                self.refineFixMods.Insert(modstring, 0)
+                self.refineFixMods.Check(0)
+        if refinevarmods:
+            for mass, site in refinevarmods:
+                modstring = '%f (%s)' % (mass, site)
+                self.refineVarMods.Insert(modstring, 0)        
+                self.refineVarMods.Check(0)
         
         self.maxExpectationValue.SetValue(searchObj['output']['maximum valid expectation value'])
         self.refineMaxExpVal.SetValue(searchObj['refine']['maximum valid expectation value'])

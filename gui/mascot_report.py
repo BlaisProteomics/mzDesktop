@@ -219,7 +219,7 @@ class MascotReportPanel(BasicTab):
         controlValues['p2g'] = self.p2gCheck.GetValue()
         controlValues['bold red'] = self.bold_red_ck.GetValue()
         controlValues['show input query'] = self.show_query_ck.GetValue()
-        controlValues['pep quant'] = self.quant_ck.GetValue()
+        #controlValues['pep quant'] = self.quant_ck.GetValue()
         #controlValues['genbank'] = self.genbank_ck.GetValue()
         controlValues['same-set hits'] = self.same_sets_ck.GetValue()
         controlValues['sub-set hits'] = self.sub_sets_ck.GetValue()

@@ -499,7 +499,7 @@ class LoginDialog(wx.Dialog):
 
 username = None
 password = None
-def runMascotSearch(writeback = None):
+def runMascotSearch(parent, writeback = None):
     global username
     global password 
     
@@ -512,7 +512,7 @@ def runMascotSearch(writeback = None):
         dlg.Destroy()
 
     try:
-        mascot_frame = MascotPanel(wx.GetActiveWindow(),
+        mascot_frame = MascotPanel(parent,
                                    login = username, 
                                    password = password)
     except RuntimeError as err:

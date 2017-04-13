@@ -1063,8 +1063,8 @@ class XTandemSearch(wx.Frame):
         
             
 
-def runXTandemSearch():
-    frame = XTandemSearch(None)
+def runXTandemSearch(parent):
+    frame = XTandemSearch(parent)
     frame.Show()
         
         

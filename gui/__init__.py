@@ -606,8 +606,8 @@ class MultiplierzFrame(wx.Frame):
 
     def on_pycomet(self, event):
         try:
-            import pyComet.PyComet as pycomet
-            pycomet.startPyComet()
+            import utilities.Comet_GUI as comet
+            comet.run_GUI(self)
         except Exception as err:
             messdog = wx.MessageDialog(self, str(err), style = wx.OK)
             messdog.ShowModal()
@@ -615,8 +615,8 @@ class MultiplierzFrame(wx.Frame):
 
     def on_xtandem(self, event):
         try:
-            import xtandem.XTandemSearch as xtandem
-            xtandem.runXTandemSearch()
+            import utilities.Tandem_GUI as xtandem
+            xtandem.runXTandemSearch(self)
         except Exception as err:
             messdog = wx.MessageDialog(self, str(err), style = wx.OK)        
             messdog.ShowModal()
@@ -624,9 +624,9 @@ class MultiplierzFrame(wx.Frame):
         
     def on_mascot(self, event):
         try:
-            import utilities.MascotSearch as mascot
+            import utilities.Mascot_GUI as mascot
             writeBack = lambda x: self.statusbar.SetStatusText(x, 1)
-            mascot.runMascotSearch(writeBack)
+            mascot.runMascotSearch(self, writeBack)
         except Exception as err:
             messdog = wx.MessageDialog(self, str(err), style = wx.OK)        
             messdog.ShowModal()

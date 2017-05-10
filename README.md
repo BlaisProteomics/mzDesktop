@@ -14,3 +14,8 @@ The self-contained executable installer for mzDesktop is available at [the Multi
 * Graphical report generating utilties for protein coverage visualization, and intact protein mass calculation.
 * Utilities for manipulating MGF, FASTA, and Excel/CSV file formats.
 * And more!
+
+
+
+#### Contact
+If you have any problems with or questions about mzDesktop, email WM Alexander at williamM_alexander@dfci.harvard.edu.

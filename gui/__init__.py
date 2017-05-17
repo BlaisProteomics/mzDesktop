@@ -390,6 +390,7 @@ class MultiplierzFrame(wx.Frame):
         hotkeys = set()
         scripts_dir = os.path.join(install_dir, 'scripts')
         if os.path.exists(scripts_dir):
+            print "Scripts directory found.  (This feature is deprecated!)"
             for d in os.listdir(scripts_dir):
                 new_dir = os.path.join(scripts_dir, d)
                 if os.path.isdir(new_dir): # for each directory we find in scripts_dir
@@ -410,8 +411,10 @@ class MultiplierzFrame(wx.Frame):
                             else:
                                 item = tools_menu.Append(-1, e[3:-3]) # no hotkey to use
                             self.Bind(wx.EVT_MENU, ScriptMenuItem(e[:-3]), item) # bind the menu item to the wrapper class
-        else:
-            print 'Scripts directory %s not found.' % scripts_dir
+        #else:
+            #print 'Scripts directory %s not present.' % scripts_dir
+        # The scripts feature is deprecated, so its not worth mentioning if 
+        # there's no scripts directory.
 
         menu_bar.Append(tools_menu, "&Tools")
 

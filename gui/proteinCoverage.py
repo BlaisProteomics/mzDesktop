@@ -517,7 +517,9 @@ class CoveragePanel(BasicTab):
             self.labelRegexStr = self.regexEntry.GetValue()
             labelRegex = re.compile(self.labelRegexStr)
             def labelConverter(label):
-                sublabels = label.split('\x01') # Some databases, 
+                # This currently doesn't deal with databases that have combined
+                # multi-accession headers.
+                #sublabels = label.split('\x01') # Some databases, 
                 result = re.search(labelRegex, label)
                 if not result:
                     raise DataError, "Can't process FASTA file.  %s gives no match for: %s" % (self.labelRegexStr, label)
@@ -913,13 +915,3 @@ def annotateFileWithCoverageImages(resultfile, fastafile):
     
     output.close()
     shutil.rmtree(tempdir)
-    
-if __name__ == '__main__':
-    #foo = r'C:\Users\Max\Desktop\SpectrometerData\cyto1b-sample.xlsx'
-    #bar = r'C:\Users\Max\Desktop\Dev\coverageThings\Marto_FR_Human.20101108.fasta'
-    from multiplierz.mzGUI_standalone import file_chooser
-    
-    foo = file_chooser(title = 'Choose PSM file:')
-    bar = file_chooser(title = 'Choose FASTA file:')
-    baz = wx.App(0)
-    annotateFileWithCoverageImages(foo, bar)

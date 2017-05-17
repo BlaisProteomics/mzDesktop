@@ -827,8 +827,8 @@ class PlotControl(object):
                 self.topst.annotations.append(('feature', 'range', featurerange, {'color':'k', 'alpha':0.2}))
 
         if psms and self.gui.mode == 'SILAC' and any(['Feature' in x for x in psms[0].keys()]):
-            lightfeatures = [self.gui.features[x] for x in set([psm['Light Features'] for psm in psms])]
-            heavyfeatures = [self.gui.features[x] for x in set([psm['Heavy Features'] for psm in psms])]
+            lightfeatures = [self.gui.features[x] for x in set([psm['Light Features'] for psm in psms]) if x]
+            heavyfeatures = [self.gui.features[x] for x in set([psm['Heavy Features'] for psm in psms]) if x]
             try:
                 mediumfeatures = [self.gui.features[x] for x in set([psm['Medium Features'] for psm in psms])]
             except KeyError:

@@ -37,7 +37,7 @@ class PreferencesFrame(wx.Frame):
         listbook = wx.Listbook(self, -1)
         listbook.AssignImageList(wx.ImageList(60, 1))
 
-        self.loggerVerbosity = LoggerVerbosityPage(listbook)
+        #self.loggerVerbosity = LoggerVerbosityPage(listbook)
         self.cometTandemPaths = CometAndTandemPage(listbook, parent)
         self.mascotServer = MascotServerPage(listbook, parent)
         self.reportSettingsPage = ReportSettingsPage(listbook)
@@ -45,7 +45,7 @@ class PreferencesFrame(wx.Frame):
         self.mzResultsSettings = mzResultsSettingsPage(listbook)
         self.mzServerSettings = mzServerSettingsPage(listbook)
         
-        listbook.AddPage(self.loggerVerbosity, "Logger Verbosity")
+        #listbook.AddPage(self.loggerVerbosity, "Logger Verbosity")
         listbook.AddPage(self.cometTandemPaths, "Comet & Tandem Paths")
         listbook.AddPage(self.mascotServer, "Mascot Server")
         listbook.AddPage(self.reportSettingsPage, "Report Settings")

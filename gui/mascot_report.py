@@ -224,7 +224,7 @@ class MascotReportPanel(BasicTab):
         controlValues['same-set hits'] = self.same_sets_ck.GetValue()
         controlValues['sub-set hits'] = self.sub_sets_ck.GetValue()
         controlValues['rank one only'] = self.rank_one_ck.GetValue()
-        controlValues['protein summary'] = self.prot_report.GetValue()
+        #controlValues['protein summary'] = self.prot_report.GetValue()
         controlValues['retain DAT'] = self.keep_dat.GetValue()        
         
         settings.save_mascot_report_controls(controlValues)
@@ -260,12 +260,12 @@ class MascotReportPanel(BasicTab):
                        self.p2gField,
                        self.bold_red_ck,
                        self.show_query_ck,
-                       self.quant_ck,
+                       #self.quant_ck,
                        #self.genbank_ck,
                        self.same_sets_ck,
                        self.sub_sets_ck,
                        self.rank_one_ck,
-                       self.prot_report,
+                       #self.prot_report,
                        self.keep_dat]
         
         for control in subControls:
@@ -339,8 +339,8 @@ class MascotReportPanel(BasicTab):
                                            show_same_set = self.same_sets_ck.IsChecked(),
                                            show_sub_set = self.sub_sets_ck.IsChecked(),
                                            #genbank = self.genbank_ck.GetValue(),
-                                           protein_report = self.prot_report.GetValue(),
-                                           quant = self.quant_ck.IsChecked(),
+                                           #protein_report = self.prot_report.GetValue(),
+                                           #quant = self.quant_ck.IsChecked(),
                                            ext = extension,
                                            login_name = self.login_text.GetValue(),
                                            password = self.password_text.GetValue(),

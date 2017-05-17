@@ -26,17 +26,17 @@ signalNoiseTooltip = ("This filter removes the least intense peaks from a "
                       "threshold.")
 intThresholdTooltip = ("This filter removes all peaks in each scan below "
                       "the specified intensity threshold.")
-rangeTooltip = ("This filters out all peaks in the spectrum beyond a certain"
+rangeTooltip = ("This filters out all peaks in the spectrum beyond a certain "
                 "MZ range (e.g., '500-2000'.)")
 
-centroidTooltip = ("Ensures that spectra are written in centroided format,"
-                   "where spectral peaks are taken as the arithmetic mean of all"
-                   "points on the peak curve.  This greatly improves search"
+centroidTooltip = ("Ensures that spectra are written in centroided format, "
+                   "where spectral peaks are taken as the arithmetic mean of all "
+                   "points on the peak curve.  This greatly improves search "
                    "performance in most cases, as well as reducing file size.")
-scanTypeTooltip = ("For Thermo .RAW files only, multiplierz can extract MS2 scans"
-                   "of a specified scan type (Collision-Induced Dissociation (CID),"
+scanTypeTooltip = ("For Thermo .RAW files only, multiplierz can extract MS2 scans "
+                   "of a specified scan type (Collision-Induced Dissociation (CID), "
                    "Higher-energy Collisional Dissociation (HCD), or Electron-"
-                   "Transfer Dissociation (ETD)), ignoring all other MS2 scans"
+                   "Transfer Dissociation (ETD)), ignoring all other MS2 scans "
                    "in the file.")
 
 scanTypeList = ['All', 'CID', 'HCD', 'ETD']

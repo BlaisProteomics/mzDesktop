@@ -131,9 +131,6 @@ class CometGUI(wx.Frame):
                                           'update multiplierz settings to '
                                           'indicate the directory of a copy '
                                           'of Comet.' % cometExe)
-        
-        #self.Bind(wx.EVT_CLOSE, self.onClose, self)
-  
         self.pane = wx.Panel(self, -1)
   
          
@@ -186,20 +183,16 @@ class CometGUI(wx.Frame):
         
         ### Peptide Ion Controls
         self.ionBox = wx.StaticBox(self.pane, -1, label = 'Ions')
-        #self.ionBox.SetToolTip(wx.ToolTip(nameToHelptext['Ions']))
         ionSizer = wx.StaticBoxSizer(self.ionBox)
         for ion in ['a','b','c','x','y','z','H2O/NH3 Loss']:
             ionctrl = wx.CheckBox(self.pane, -1, ion, name = '%s ions' % ion)
             if ion in ['b', 'y']:
                 ionctrl.SetValue(True)
-            #ionctrl.SetToolTip(wx.ToolTip(nameToHelptext['Ions']))
             ionSizer.Add(ionctrl, 0, wx.ALL, 5)        
         
         
         
         gbs = wx.GridBagSizer(10, 10)
-        
-        #topSizer = wx.BoxSizer(wx.HORIZONTAL)
         
         modSizer = wx.GridBagSizer(10, 10)
         modSizer.Add(fixmodText, (0, 0), flag = wx.ALIGN_LEFT)
@@ -325,18 +318,24 @@ class CometGUI(wx.Frame):
             # Fixed mods don't havet his limitation, being site-based.
             return
             
-        varmodparlines = []
-        for i, varmodstr in enumerate(varmodstrs, start = 1):
-            modname, sites = varmodstr.split()
-            sites = sites.strip('()')
+        searchObj.varmods = []
+        for varmodstr in varmodstrs:
+            modwords = varmodstr.split()
+            modname, sites = ' '.join(modwords[:-1]), modwords[-1]
+
             try:
                 modmass = float(modname.strip())
             except ValueError:
-                modmass = unimod.get_mod_delta(modname)
-            parname = "variable_mod0%d" % i
-            valstr = "%f %s 0 5 -1 0 0" % (modmass, sites)
-            searchObj[parname] = valstr
-        
+                modmass = unimod.get_mod_delta(modname)  
+            mod = {'mass' : float(modmass),
+                   'residues' : sites,
+                   'binary' : '0',
+                   'max_mods_per_peptide' : '5',
+                   'term_distance' : '-1',
+                   'N/C-term' : '0',
+                   'required' : '0'}
+            searchObj.varmods.append(mod)
+                
         fixmodMassBySite = defaultdict(float)
         for fixmodstr in fixmodstrs:
             modname, sites = fixmodstr.split()
@@ -378,21 +377,14 @@ class CometGUI(wx.Frame):
                 ctrl.SetSelection(num)
             else:
                 ctrl.SetValue(convert[str(searchObj[parname])])
-                
-        
-        for varmodpar in ['variable_mod0%d' % x for x in range(1, 10)]:
-            try:
-                parvalue = searchObj[varmodpar]
-            except KeyError:
-                continue
-            if not parvalue:
-                continue
-            
-            modmass, modsites = parvalue.split()[:2]
-            if float(modmass):
-                modstr = '%s (%s)' % (modmass, modsites)
-                self.varmodCtrl.Insert(modstr, 0)
-                self.varmodCtrl.Check(0)
+         
+        for varmod in searchObj.varmods:
+            modmass = str(varmod['mass'])
+            modsites = varmod['residues']
+            modsites = modsites.replace('n', 'N-Term').replace('c', 'C-Term')
+            modstr = '%s (%s)' % (modmass, modsites)
+            self.varmodCtrl.Insert(modstr, 0)
+            self.varmodCtrl.Check(0)            
         
         fixedMassSites = defaultdict(list)
         for site, fixmodpar in FixModFields:

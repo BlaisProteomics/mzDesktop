@@ -26,6 +26,7 @@ parCtrls = [('USERNAME','Name'),
             ('MODS','Fixed Modifications'),
             ('IT_MODS','Variable Modifications'),
             ('PFA','Missed Cleavages'),
+            ('ERRORTOLERANT', 'Error Tolerant Search'),
             ('bold_red', 'Require Bold Red'),
             ('show_query_data', 'Show Query Data'),
             ('show_same_set', 'Include Same-Set Protein Hits'),
@@ -124,6 +125,9 @@ class MascotPanel(wx.Frame):
         precUnitLabel.Destroy()
         fragUnitLabel.Destroy()
         
+        
+        self.errorTol = checkBox("Error Tolerant Search")
+        
         #self.monoOrAverage = wx.CheckBox(pane, -1, "Use Averaged Mass", 
                                          #name = "Use Averaged Mass")
         self.monoOrAverage = checkBox("Use Averaged Mass")
@@ -159,7 +163,8 @@ class MascotPanel(wx.Frame):
         dbBox = wx.GridBagSizer(10, 10)
         dbLayout = [(dbaseLabel, (0, 0), wx.ALIGN_RIGHT), (self.dbaseCtrl, (0, 1), wx.EXPAND, (3, 2)),
                     (enzymeLabel, (0, 4), wx.ALIGN_RIGHT), (self.enzymeCtrl, (0, 5), wx.ALIGN_LEFT),
-                    (cleaveLabel, (1, 4), wx.ALIGN_RIGHT), (self.cleaveCtrl, (1, 5), wx.ALIGN_LEFT)]
+                    (cleaveLabel, (1, 4), wx.ALIGN_RIGHT), (self.cleaveCtrl, (1, 5), wx.ALIGN_LEFT),
+                    (self.errorTol, (2, 4), wx.EXPAND, (1, 2))]
                     #(self.monoOrAverage, (2, 3), wx.EXPAND, (1, 2))]
         
         modBox = wx.GridBagSizer(10, 10)

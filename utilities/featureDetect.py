@@ -1,4 +1,4 @@
-from multiplierz.mzTools.featureDetector import detectorRun
+from multiplierz.mzTools.featureDetector import feature_analysis
 from regex import RegexHelper
 from multiplierz.mzReport import reader
 import wx
@@ -151,8 +151,7 @@ class DetectorSession(wx.Frame):
         
         wx.BeginBusyCursor()
         self.goButton.Enable(False)
-        #detectorRun(datafile, resultfiles, mzRegex, scanRegex)
-        async.launch_process(detectorRun, None, datafile, resultfiles, mzRegex, scanRegex)
+        async.launch_process(feature_analysis, None, datafile, resultfiles, None, mzRegex, scanRegex)
         self.goButton.Enable(True)
         wx.EndBusyCursor()
     

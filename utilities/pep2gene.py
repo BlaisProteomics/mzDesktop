@@ -205,7 +205,8 @@ class p2gSession(wx.Frame):
                     self.programBar.AppendText("Wrote %s" % outputfile)
                 #add_gene_ids(target, database, inPlace = False, distinguish_leucine=True)
                 async.launch_process(add_gene_ids, completionCallback,
-                                     target, database, inPlace = False, leucineAmbiguity=True)
+                                     target, database, inPlace = False,
+                                     leucine_equals_isoleucine=True)
             except Exception as err:
                 self.programBar.Clear()
             finally:

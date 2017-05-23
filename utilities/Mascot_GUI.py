@@ -516,6 +516,10 @@ def runMascotSearch(parent, writeback = None):
                                   dlg.FindWindowByName("Password").GetValue())        
         dlg.Destroy()
 
+        if username == None and password == None:
+            print "Login cancelled."
+            return
+
     try:
         mascot_frame = MascotPanel(parent,
                                    login = username, 

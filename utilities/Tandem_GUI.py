@@ -187,7 +187,7 @@ nameToParameter = {'Enzyme':'protein, cleavage',
                    #'Precursor Tol.':'spectrum, parent monoisotopic mass error minus',
                    'Precursor Tol. Units':'spectrum, parent monoisotopic mass error units',
                    'Fragment Tol.':'spectrum, fragment monoisotopic mass error',
-                   'Fragment Tol. Units':'spectrum, fragment monoisotopic mass units',
+                   'Fragment Tol. Units':'spectrum, fragment monoisotopic mass error units',
                    'Maximum Expectation Value':'output, maximum valid expectation value',
                    'Accept C13 Mass':'spectrum, parent monoisotopic mass isotope error',
                    'Mass Type':'spectrum, fragment mass type',
@@ -877,7 +877,7 @@ class XTandemSearch(wx.Frame):
     def openParameterFile(self, event):
         filedialog = wx.FileDialog(parent = self, message = "Choose MS Data File",
                                    style = wx.FD_OPEN,
-                                   wildcard = 'XML|*.xml|*|All')
+                                   wildcard = 'XML|*.xml|All|*.*')
         
         filedialog.ShowModal()
         newfile = filedialog.GetPath()
@@ -961,15 +961,17 @@ class XTandemSearch(wx.Frame):
         
         fixmodstr = searchObj['residue']['modification mass']
         varmodstr = searchObj['residue']['potential modification mass']
-        if searchObj['refine']['']:
-            refinefixmodstr = searchObj['refine']['modification mass']
-            refinevarmodstr = searchObj['refine']['potential modification mass']
+        #if searchObj['refine']['']:
+            #refinefixmodstr = searchObj['refine'].get('modification mass', '')
+            #refinevarmodstr = searchObj['refine'].get('potential modification mass')
         
         fixmods = aaDeltaStrToMods(fixmodstr)
         varmods = aaDeltaStrToMods(varmodstr)
         if searchObj['refine']['']:
-            refinefixmods = searchObj['refine']['modification mass']
-            refinevarmods = searchObj['refine']['potential modification mass']
+            refinefixmodstr = searchObj['refine'].get('modification mass', '')
+            refinefixmods = aaDeltaStrToMods(refinefixmodstr) 
+            refinevarmodstr = searchObj['refine'].get('potential modification mass', '')
+            refinevarmods = aaDeltaStrToMods(refinevarmodstr)
         else:
             refinefixmods = []
             refinevarmods = []

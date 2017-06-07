@@ -88,7 +88,7 @@ class MergePanel(BasicTab):
         self.Bind(wx.EVT_BUTTON, self.dispatchModes, self.runButton)
 
     def addFile(self, event):
-        filenames = report_chooser(self, mode = 'm')
+        filenames = report_chooser('Select file:', mode = 'm')
         if filenames:
             self.fileList.InsertItems(filenames, 0)
     

@@ -85,7 +85,7 @@ class PreferencesFrame(wx.Frame):
         self.justClose(event)
         
     def justSet(self, event):
-        self.loggerVerbosity.on_set_level(event)
+        #self.loggerVerbosity.on_set_level(event)
         self.mascotServer.on_set_server(event)
         self.cometTandemPaths.on_set_paths(event)
         self.reportSettingsPage.on_set_size(event)

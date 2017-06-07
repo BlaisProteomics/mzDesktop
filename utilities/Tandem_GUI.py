@@ -9,8 +9,49 @@ import os, sys
 import re
 from collections import defaultdict
 
-# THIS SHOULD BE ADDED TO the installer stuff!
-xmlDataFile = os.path.join(myData, 'xtandemdata.txt')
+xmlData = ['START ENZYMES',
+           '[R]|[A-Z] is Arg-C',
+           '[A-Z]|[D] is Asp-N',
+           '[KAY]|[A-Z] is Bromelain',
+           '[M]|[A-Z] is CNBr_HSer',
+           '[M]|[A-Z] is CNBr_HSerLac',
+           '[R]|[A-Z] is Cathepsin B',
+           '[LF]|{VAG} is Cathepsin D',
+           '[YWF]|[A-Z] is Cathepsin G',
+           '[YWFL]|[A-Z] is Chymotrypsin',
+           '[R]|[P] is Clostripain',
+           '[AVLIGS]|[A-Z] is Elastase',
+           '[E]|[A-Z] is Glu-C_Bic',
+           '[ED]|[A-Z] is Glu-C_Phos',
+           '[N]|[G] is Hydroxylamine',
+           '[K]|[A-Z] is Lys-C',
+           '[A-Z]|[K] is Lys-N',
+           '[RK]|[A-Z] is Papain',
+           '[LF]|{VAG} is Pepsin',
+           '[YWF]|[A-Z] is Proteinase K',
+           '{RHK}|[A-Z] is Subtilisin',
+           '[LFIVMA]|{P} is Thermolysin',
+           '[KR]|{P} is Trypsin',
+           'END ENZYMES',
+           'START MODS',
+           'Acetyl (K)',
+           'Acetyl (N-term)',
+           'Carbamidomethyl (C)',
+           'Guanidinyl (K)',
+           'Methyl (C-term)',
+           'Methyl (DE)',
+           'Oxidation (M)',
+           'Oxidation (W)',
+           'Phospho (ST)',
+           'Phospho (Y)',
+           'deamidation (NQ)',
+           'iTRAQ4plex (K)',
+           'iTRAQ4plex (N-term)',
+           'iTRAQ4plex (Y)',
+           'iTRAQ8plex (K)',
+           'iTRAQ8plex (N-term)',
+           'iTRAQ8plex (Y)',
+           'END MODS']
 
 
 enzymeList = {}
@@ -179,7 +220,7 @@ nameToHelptext = {'Enzyme':('Enzyme used to calculate peptides from the target '
 
 
 
-nameToParameter = {'Enzyme':'protein, cleavage',
+nameToParameter = {'Enzyme':'protein, cleavage site',
                    'Missed Cleavages':'scoring, maximum missed cleavage sites',
                    #'Fixed Modifications':'residue, modification mass',
                    #'Variable Modifications':'residue, potential modification mass',
@@ -194,10 +235,12 @@ nameToParameter = {'Enzyme':'protein, cleavage',
                    'Include Reverse':'scoring, include reverse',
                    'Cyclic Permutation':'scoring, cyclic permutation',
                    'Min. Ion Count':'scoring, minimum ion count',
+                   'Peptide C-Term Mass':'protein, cleavage C-terminal mass change',
+                   'Peptide N-Term Mass':'protein, cleavage N-terminal mass change',
                    'Protein C-Term Mass':'protein, C-terminal residue modification mass',
                    'Protein N-Term Mass':'protein, N-terminal residue modification mass',
                    'Semi-Enzymatic Cleavage':'protein, cleavage semi',
-                   'Use Annotation File':'protein, use annotations',
+                   #'Use Annotation File':'protein, use annotations',
                    'Minimum Fragment m/z':'spectrum, minimum fragment m/z',
                    'Dynamic Range':'spectrum, dynamic range',
                    'Total Peaks':'spectrum, total peaks',
@@ -208,7 +251,7 @@ nameToParameter = {'Enzyme':'protein, cleavage',
                    'Neutral Loss':'spectrum, use neutral loss window',
                    'Mass':'spectrum, neutral loss mass',
                    'Window':'spectrum, neutral loss window',
-                   'Enable Refinement Step':'refine,',
+                   'Enable Refinement Step':'refine',
                    'Fixed Modifications':'refine, modification mass',
                    #'Variable Modifications':'refine, potential modification mass',
                    #'Maximum Expected Value': 'refine, maximum valid expectation value',
@@ -216,8 +259,8 @@ nameToParameter = {'Enzyme':'protein, cleavage',
                    #'Semi-Enzymatic Cleavage':'refine, cleavage semi', # Repeat.
                    'Point Mutations':'refine, point mutations',
                    'Unanticipated Cleavage':'refine, unanticipated cleavage',
-                   'Spectrum Synthesis':'refine, spectrum synthesis',
-                   'Refine With Annotation File':'refine, use annotations'}
+                   'Spectrum Synthesis':'refine, spectrum synthesis'}
+                   #'Refine With Annotation File':'refine, use annotations'}
 
 #parameterToName = dict([(v, k) for k, v in nameToParameter.items()])
 
@@ -226,14 +269,15 @@ specialCaseParameters = ['Fixed Modifications',
                          'Data File',
                          'FASTA Files',
                          'Parameter File',
-                         'Refine Maximum Expectation Value']
-
+                         'Refine Maximum Expectation Value',
+                         'Precursor Tol.',
+                         'Enzyme']
 
 def modNamesToAADeltaStr(mods):
     # Mods should be in 'Phospho (T)'-ish format.
     aashifts = defaultdict(float)
     for mod in mods:
-        aas = list(mod.split('(')[1].split(')'))
+        aas = mod.split()[-1].strip('() ')
         modname = mod.split()[0]
         try:
             shift = mod_masses[modname]
@@ -244,12 +288,14 @@ def modNamesToAADeltaStr(mods):
                 shift = unimod.get_mod_delta(modname)
         
         for aa in aas:
+            assert aa
             aashifts[aa] += shift
     
     
     modstrs = []
     for aa, shift in aashifts.items():
         substr = '%.3f@%s' % (shift, aa)
+        modstrs.append(substr)
         
     return ','.join(modstrs)
 
@@ -447,12 +493,12 @@ class XTandemSearch(wx.Frame):
         
         self.semienzymeCleavage = wx.CheckBox(pane, -1, 'Semi-Enzymatic Cleavage',
                                               name = 'Semi-Enzymatic Cleavage')
-        self.useAnnotationsCtrl = wx.CheckBox(pane, -1, 'Use Annotation File',
-                                              name = 'Use Annotation File')
+        #self.useAnnotationsCtrl = wx.CheckBox(pane, -1, 'Use Annotation File',
+                                              #name = 'Use Annotation File')
         
         self.proteinControls = [self.ntermModmassCtrl, self.ntermPepmassCtrl,
                                 self.ctermModmassCtrl, self.ctermPepmassCtrl,
-                                self.semienzymeCleavage, self.useAnnotationsCtrl]
+                                self.semienzymeCleavage]#, self.useAnnotationsCtrl]
         
         
         ### Spectrum Controls
@@ -512,8 +558,8 @@ class XTandemSearch(wx.Frame):
                                              name = 'Point Mutations')
         self.refineSpectrumSynth = wx.CheckBox(pane, -1, 'Spectrum Synthesis',
                                                name = 'Spectrum Synthesis')
-        self.refineUseAnnotations = wx.CheckBox(pane, -1, 'Refine With Annotation File',
-                                                name = 'Refine With Annotation File')
+        #self.refineUseAnnotations = wx.CheckBox(pane, -1, 'Refine With Annotation File',
+                                                #name = 'Refine With Annotation File')
         
         self.refineFixed = wx.CheckBox(pane, -1, "Use Main Fixed Mod List",
                                        name = "Use For Full Refinement, Fixed")
@@ -528,7 +574,7 @@ class XTandemSearch(wx.Frame):
                                self.refineMaxExpVal, self.refineSemiEznyme,
                                self.refineUnanticiaptedClvg, self.refinePtMutations,
                                self.refineSpectrumSynth, self.refineFixed,
-                               self.refineUseAnnotations, self.refineFull,
+                               self.refineFull, #self.refineUseAnnotations,
                                self.refineMaxExpLabel]
         self.toggleRefine(None)
         self.toggleNoiseSup(None)
@@ -636,8 +682,8 @@ class XTandemSearch(wx.Frame):
         proteinSizer.Add(self.semienzymeCleavage, (3, 1), span = (1, 3),
                          border = 10,
                          flag = wx.ALIGN_LEFT | wx.TOP)
-        proteinSizer.Add(self.useAnnotationsCtrl, (4, 1), span = (1, 3),
-                         flag = wx.ALIGN_LEFT )
+        #proteinSizer.Add(self.useAnnotationsCtrl, (4, 1), span = (1, 3),
+                         #flag = wx.ALIGN_LEFT )
         
         
         spectrumSizer = wx.GridBagSizer(5, 5)
@@ -682,7 +728,7 @@ class XTandemSearch(wx.Frame):
         subRefine.Add(self.refineUnanticiaptedClvg, (1, 0))
         subRefine.Add(self.refinePtMutations, (2, 0))
         subRefine.Add(self.refineSpectrumSynth, (3, 0))
-        subRefine.Add(self.refineUseAnnotations, (4, 0))
+        #subRefine.Add(self.refineUseAnnotations, (4, 0))
         
         subRefine.Add(self.refineMaxExpLabel, (5, 0), flag = wx.ALIGN_RIGHT)
         subRefine.Add(self.refineMaxExpVal, (5, 1))
@@ -759,33 +805,38 @@ class XTandemSearch(wx.Frame):
         
     
     def loadData(self):
-        assert os.path.exists(xmlDataFile), "Multiplierz XTandem settings not available!"
         global enzymeList
         global fixmods
         global varmods
-        #global taxonList # How best to deal with this?
         
         enzymeList = {}
         fixmods = []
         varmods = []
         
-        with open(xmlDataFile, 'r') as data:
-            mode = None
-            for line in data.readlines():
-                if '#' in line:
-                    line = line[:line.index('#')]
-                line = line.strip()
-                if not line:
-                    continue
-                
-                if line == 'START ENZYMES':
-                    mode = 'enzyme'
-                elif line == 'END ENZYMES':
-                    mode = None
-                elif line == 'START MODS':
-                    mode = 'mod'
-                elif line == 'END MODS':
-                    mode = None
+        mode = None
+        for line in xmlData:
+            if '#' in line:
+                line = line[:line.index('#')]
+            line = line.strip()
+            if not line:
+                continue
+            
+            if line == 'START ENZYMES':
+                mode = 'enzyme'
+            elif line == 'END ENZYMES':
+                mode = None
+            elif line == 'START MODS':
+                mode = 'mod'
+            elif line == 'END MODS':
+                mode = None
+            else:
+                assert mode, "Incorrect formatting of XTandem settings- missing 'END ENZYMES' or 'END MODS'?"
+                if mode == 'enzyme':
+                    regex, label = [x.strip() for x in line.split(' is ')]
+                    enzymeList[label] = regex
+                elif mode == 'mod':
+                    fixmods.append(line)
+                    varmods.append(line)
                 else:
                     assert mode, "Incorrect formatting of XTandem settings- missing 'END ENZYMES' or 'END MODS'?"
                     if mode == 'enzyme':
@@ -958,6 +1009,9 @@ class XTandemSearch(wx.Frame):
             else:
                 print "No value for %s (%s, %s)" % (ctrlname, category, parameter)
         
+        plustol = float(searchObj['spectrum']['parent monoisotopic mass error plus'])
+        minustol = float(searchObj['spectrum']['parent monoisotopic mass error minus'])
+        self.FindWindowByName('Precursor Tol.').SetValue(str(plustol + minustol))
         
         fixmodstr = searchObj['residue']['modification mass']
         varmodstr = searchObj['residue']['potential modification mass']
@@ -1027,7 +1081,17 @@ class XTandemSearch(wx.Frame):
             else:
                 value = ctrl.GetValue()
                 searchobj[category][parameter] = value
-                
+        
+        #searchobj['refine'][''] = 'yes' if self.FindWindowByName('Refine').GetValue()) else 'no'
+        
+        enzymename = self.FindWindowByName('Enzyme').GetValue()
+        cleavage = enzymeList[enzymename]
+        searchobj['protein']['cleavage site'] = cleavage
+        
+        totalprectol = self.FindWindowByName('Precursor Tol.').GetValue()
+        halftol = float(totalprectol) / 2
+        searchobj['spectrum']['parent monoisotopic mass error minus'] = halftol
+        searchobj['spectrum']['parent monoisotopic mass error plus'] = halftol
         
         fixmods = self.fixmodCtrl.GetCheckedStrings()
         varmods = self.varmodCtrl.GetCheckedStrings()
@@ -1072,8 +1136,6 @@ def runXTandemSearch(parent):
         
     
 if __name__ == '__main__':
-    print "Have you fixed the terminal modification-to-parameter-file part yet?"
-    
     foo = wx.App(0)
     bar = XTandemSearch(None)
     bar.Show()

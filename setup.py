@@ -76,7 +76,7 @@ def get_data_files():
     return datafiles
                 
 
-setup(name = 'multiplierz mzDesktop',
+setup(name = 'mzDesktop',
       version = '2.0',
       description = 'The multiplierz mzDesktop GUI toolset',
       author = 'William Max Alexander (et al.)',
@@ -95,7 +95,7 @@ setup(name = 'multiplierz mzDesktop',
       #console=['mzDesktop.py'],
       console = [{'script': 'mzDesktop.py',
                   'icon_resources': [(1, 'images\icons\multiplierz.ico')]}],      
-      options = {'py2exe': {'packages': ['iminuit', 'wx'],
+      options = {'py2exe': {'packages': ['iminuit', 'wx'], # wx instead?
                                        ###'mzDesktop/gui', 'mzDesktop/utilities',
                                        ###'mzDesktop/xtandem', 'mzDesktop/pyComet'],
                           #'excludes': ['MySQLdb', '_gtkagg', '_tkagg', 'hotshot', 'PIL',

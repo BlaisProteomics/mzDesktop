@@ -144,7 +144,8 @@ class FragmentPanel(BasicTab):
         
         try:
             frag_data = fragment_legacy(peptide, ion_array, labels = False)
-        except ValueError:
+        except ValueError as err:
+            print err
             wx.MessageBox('Invalid mass value.', 'Error')
 
             # update statusbar
@@ -152,6 +153,7 @@ class FragmentPanel(BasicTab):
             self.set_status("Done", 1)
             return
         except LookupError as err:
+            print err
             wx.MessageBox('Invalid modification name or position.', 'Error')
             import sys
             print sys.exc_info()

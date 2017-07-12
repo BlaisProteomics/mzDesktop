@@ -333,7 +333,7 @@ class MultiplierzFrame(wx.Frame):
 
         file_menu_exit = file_menu.Append(wx.ID_EXIT, "&Quit\tCtrl+Q", "Terminate the program")
         self.Bind(wx.EVT_MENU, self.on_exit, file_menu_exit)
-        self.Bind(wx.EVT_CLOSE, self.on_exit)
+        #self.Bind(wx.EVT_CLOSE, self.on_exit)
 
         menu_bar.Append(file_menu, "&File")
 
@@ -521,11 +521,11 @@ class MultiplierzFrame(wx.Frame):
         self.nb.Selection = 0
 
     def on_exit(self, event):
-        logger_message(level=20, message='Cleaning up image folder')
-        p = os.path.join(myTemp)
-        for i in os.listdir(p):
-            logger_message(level=10, message='removing %s ...' % os.path.join(p,i))
-            os.remove(os.path.join(p,i))
+        #logger_message(level=20, message='Cleaning up image folder')
+        #p = os.path.join(myTemp)
+        #for i in os.listdir(p):
+            #logger_message(level=10, message='removing %s ...' % os.path.join(p,i))
+            #os.remove(os.path.join(p,i))
         self.Destroy()
         sys.exit()
 

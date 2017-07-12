@@ -17,7 +17,7 @@ except:
                                   r'(?<=[-])[0-9]+[/.][0-9]*(?=[-])(?# Returns a floating-point number between two - characters)',
                                   r'(?<=[\s])[\S]+(?=[\s])(?# Returns first text surrounded by whitespace.)',
                                   r"(?<=[\s,>])[\S]+(?=[\s])(?# Returns first text surrounded by whitespace or the > character, such as in FASTA.)",
-                                  r"([0-9]+)(?=\.\1)(?# Returns the first number that repeats after a following '.', e.g. '393.393'.)",
+                                  r"([0-9]{2,})(?=\.\1)(?# Returns the first number that repeats after a following '.', e.g. '393.393'.)",
                                   "(?<=\|)[A-Z0-9\-]{1,10}(?=\|)(?# SwissProt/UniProt)",
                                   "(?<=ref\|)[A-Z0-9\-\_\.]{1,20}(?=\|)(?# NCBI)"]
     regularExpressionFile = open(os.path.join(myData, 'RegularExpressions.txt'), 'w')

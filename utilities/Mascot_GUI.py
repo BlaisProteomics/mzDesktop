@@ -35,7 +35,8 @@ parCtrls = [('USERNAME','Name'),
             ('combine_spectra', 'Combine Spectra'),
             ('run_fdr', 'FDR Filter (Requies Forward-Reverse Database)'),
             ('fdr_key', 'Reverse Accession Key'),
-            ('ion_cutoff', 'Ion Score Cutoff')]
+            ('ion_cutoff', 'Ion Score Cutoff'),
+            ('DECOY', 'Mascot Decoy Search')]
 ctrlByPar = dict(parCtrls)
 
 class MascotPanel(wx.Frame):
@@ -127,7 +128,7 @@ class MascotPanel(wx.Frame):
         
         
         self.errorTol = checkBox("Error Tolerant Search")
-        
+        self.reverseSearch = checkBox("Mascot Decoy Search")
         #self.monoOrAverage = wx.CheckBox(pane, -1, "Use Averaged Mass", 
                                          #name = "Use Averaged Mass")
         self.monoOrAverage = checkBox("Use Averaged Mass")
@@ -161,9 +162,10 @@ class MascotPanel(wx.Frame):
                         (titleLabel, (1, 0), wx.ALIGN_RIGHT), (self.titleCtrl, (1, 1), wx.EXPAND, (1, 4))]
         
         dbBox = wx.GridBagSizer(10, 10)
-        dbLayout = [(dbaseLabel, (0, 0), wx.ALIGN_RIGHT), (self.dbaseCtrl, (0, 1), wx.EXPAND, (3, 2)),
+        dbLayout = [(dbaseLabel, (0, 0), wx.ALIGN_RIGHT), (self.dbaseCtrl, (0, 1), wx.EXPAND, (4, 2)),
                     (enzymeLabel, (0, 4), wx.ALIGN_RIGHT), (self.enzymeCtrl, (0, 5), wx.ALIGN_LEFT),
                     (cleaveLabel, (1, 4), wx.ALIGN_RIGHT), (self.cleaveCtrl, (1, 5), wx.ALIGN_LEFT),
+                    (self.reverseSearch, (3, 4), wx.EXPAND, (1, 2)),
                     (self.errorTol, (2, 4), wx.EXPAND, (1, 2))]
                     #(self.monoOrAverage, (2, 3), wx.EXPAND, (1, 2))]
         
@@ -395,16 +397,16 @@ class MascotPanel(wx.Frame):
         self.Destroy()
     
     def openData(self, event):
-        datafile = file_chooser('Open MS data file:', mode = 'r',
+        datafiles = file_chooser('Open MS data file:', mode = 'm',
                                 wildcard = 'MGF|*.MGF|All|*.*')
-        if not datafile:
+        if not datafiles:
             return
-        self.dataCtrl.SetValue(datafile)
+        self.dataCtrl.SetValue('; '.join(datafiles))
         
     def submitSearch(self, event):
         self.goButton.Enable(False)
         
-        datafile = self.dataCtrl.GetValue()
+        datafiles = [x for x in self.dataCtrl.GetValue().split('; ') if x]
         parameters = self.collectParameters()
         
         if not (self.ms != None and self.ms.logged_in):
@@ -413,62 +415,74 @@ class MascotPanel(wx.Frame):
                                                     settings.get_mascot_version()))
             self.ms.login(self.login, self.password)
         
-        dat_id = None
-        try:
-            wx.BeginBusyCursor()
-            assert os.path.exists(datafile), '%s not found!' % datafile
-            dat_id, err = self.ms.search(parameters, datafile)
-            if err:
-                raise RuntimeError, 'Mascot error: %s' % repr(err)
-            if not dat_id:
-                raise RuntimeError, ('.DAT id not returned; usually this '
-                                     'is due to a connection error.')
-        except AssertionError as err:
-            wx.MessageBox('Search process encountered an error:\n\n%s' % repr(err),
-                          "Could not run search.")    
-            raise err
-        finally:
-            wx.EndBusyCursor()
-            self.goButton.Enable(True)         
+        result_ids = []
+        for datafile in datafiles:
+            dat_id = None
+            try:
+                wx.BeginBusyCursor()
+                assert os.path.exists(datafile), '%s not found!' % datafile
+                dat_id, err = self.ms.search(parameters, datafile)
+                if err:
+                    raise RuntimeError, 'Mascot error: %s' % repr(err)
+                if not dat_id:
+                    raise RuntimeError, ('.DAT id not returned; usually this '
+                                         'is due to a connection error.')
+            except (AssertionError, RuntimeError) as err:
+                wx.MessageBox('Search process encountered an error:\n\n%s' % repr(err),
+                              "Could not run search.")    
+                raise err
+            finally:
+                wx.EndBusyCursor()
+                self.goButton.Enable(True)         
         
-        if not (self.downloadSearch.GetValue() and dat_id):
-            if dat_id:
-                wx.MessageBox("Successfully submitted search; search log # %s" % dat_id)
-                return
-        
-        try:
-            wx.BeginBusyCursor()
-            self.goButton.Enable(False)
-            resultfile = retrieveMascotReport([dat_id],
-                                              login_name = self.login,
-                                              password = self.password,
-                                              rank_one = self.firstRank.GetValue(),
-                                              ion_cutoff = float(self.ionCtrl.GetValue()),
-                                              bold_red = self.boldRed.GetValue(),
-                                              max_hits = 999999,
-                                              show_query_data = self.showData.GetValue(),
-                                              show_same_set = self.sameSet.GetValue(),
-                                              show_sub_set = self.subSet.GetValue())[0]
-            if self.combineSpectra.GetValue():
-                resultfile = combine_accessions(resultfile, resultfile)
-            if self.fdr_filter.GetValue():
-                fdrKey = self.fdrKeyCtrl.GetValue()
-                if not fdrKey:
-                    fdrKey = 'rev_'
-                resultfile = calculate_FDR(resultfile, outputfile = resultfile,
-                                           decoyString = fdrKey)
-            wx.MessageBox('Wrote search session %s to %s' % (dat_id, resultfile),
-                          'Mascot search completed.')
-        except Exception as err:
-            wx.MessageBox('Result download encountered an error:\n\n%s' % repr(err),
-                          "Could not run search.")   
-            raise err
-        finally:
-            wx.EndBusyCursor()
-            self.goButton.Enable(True)
+                if not (self.downloadSearch.GetValue() and dat_id):
+                    if dat_id:
+                        #wx.MessageBox("Successfully submitted search; search log # %s" % dat_id)
+                        #return
+                        result_ids.append((dat_id, None))
+                
+                try:
+                    wx.BeginBusyCursor()
+                    self.goButton.Enable(False)
+                    resultfile = retrieveMascotReport([dat_id],
+                                                      login_name = self.login,
+                                                      password = self.password,
+                                                      chosen_folder = os.path.dirname(datafile),
+                                                      rank_one = self.firstRank.GetValue(),
+                                                      ion_cutoff = float(self.ionCtrl.GetValue()),
+                                                      bold_red = self.boldRed.GetValue(),
+                                                      max_hits = 999999,
+                                                      show_query_data = self.showData.GetValue(),
+                                                      show_same_set = self.sameSet.GetValue(),
+                                                      show_sub_set = self.subSet.GetValue())[0]
+                    if self.combineSpectra.GetValue():
+                        resultfile = combine_accessions(resultfile, resultfile)
+                    if self.fdr_filter.GetValue():
+                        fdrKey = self.fdrKeyCtrl.GetValue()
+                        if not fdrKey:
+                            fdrKey = 'rev_'
+                        resultfile = calculate_FDR(resultfile, outputfile = resultfile,
+                                                   decoyString = fdrKey)
+                    
+                    result_ids.append((dat_id, resultfile))
+                except Exception as err:
+                    wx.MessageBox('Result download encountered an error:\n\n%s' % repr(err),
+                                  "Could not run search.")   
+                    raise err
+                finally:
+                    wx.EndBusyCursor()
+                    self.goButton.Enable(True)
 
-
-
+        assert result_ids, 'No successful search results.'
+        if not self.downloadSearch.GetValue():
+                wx.MessageBox("Successfully submitted search; search log # %s" % ' '.join(zip(*result_ids)[0]))
+                  
+        else:
+            #wx.MessageBox('Wrote search session %s to %s' % (dat_id, resultfile),
+                          #'Mascot search completed.')             
+            searchresults = '\n'.join('Search session %s  was written to %s' % (ti, rf) for ti, rf in result_ids)
+            wx.MessageBox('Search saved to disk:\n\n%s' % searchresults)
+                
 
 
 

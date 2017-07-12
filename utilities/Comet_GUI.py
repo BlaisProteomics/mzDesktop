@@ -97,9 +97,10 @@ FixModFields = [('G', 'add_G_glycine'),
 
 
 class CometGUI(wx.Frame):
-    def textCtrl(self, name):
+    def textCtrl(self, name, defaultVal = ''):
         label = wx.StaticText(self.pane, -1, name)
-        ctrl = wx.TextCtrl(self.pane, -1, '', name = name.replace('\n', ''), size = (70, -1))
+        ctrl = wx.TextCtrl(self.pane, -1, str(defaultVal),
+                           name = name.replace('\n', ''), size = (70, -1))
         return label, ctrl
     def fileCtrl(self, name, bind = True):
         label = wx.StaticText(self.pane, -1, name)
@@ -178,6 +179,11 @@ class CometGUI(wx.Frame):
         removePrecLabel, self.removePrecCtrl = self.textCtrl('Remove +/- Precursor MZ')
         # remove_precursor_peak should be a different setting for ETD spectra; add control?
         
+        reportOptLabel = wx.StaticText(self.pane, -1, 'Output Options')
+        reportOptLabel.SetFont(wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.FONTWEIGHT_BOLD))
+        maxRankLabel, self.maxRankCtrl = self.textCtrl('Rank Cutoff', defaultVal = 1)
+        maxExpLabel, self.maxExpCtrl = self.textCtrl('Expectation Value Cutoff', defaultVal = 0.01)
+        
         self.saveButton = wx.Button(self.pane, -1, "Save Parameters")
         self.goButton = wx.Button(self.pane, -1, 'Run Search')
         
@@ -237,6 +243,11 @@ class CometGUI(wx.Frame):
         searchBox = [(self.decoyCtrl, (0, 0), wx.ALIGN_RIGHT), (decoyStringLabel, (0, 1), wx.ALIGN_RIGHT),
                      (self.decoyStringCtrl, (0, 2), wx.ALIGN_LEFT)]
         
+        reportSizer = wx.GridBagSizer(5, 5, )
+        reportBox = [(reportOptLabel, (0, 0), wx.ALIGN_CENTRE | wx.BOTTOM, (1, 5)),
+                     (maxRankLabel, (1, 0), wx.ALIGN_RIGHT), (self.maxRankCtrl, (1, 1), wx.ALIGN_LEFT | wx.RIGHT),
+                     (maxExpLabel, (1, 3), wx.ALIGN_RIGHT | wx.LEFT), (self.maxExpCtrl, (1, 4), wx.ALIGN_LEFT)]
+        
         fileSizer = wx.GridBagSizer(5, 5)
         fileBox = [(dataLabel, (0, 0), wx.ALIGN_RIGHT), (self.dataCtrl, (0, 1), wx.EXPAND, (1, 2)),
                    (self.dataBrowse, (0, 3), wx.ALIGN_LEFT),
@@ -247,7 +258,8 @@ class CometGUI(wx.Frame):
                    (self.saveButton, (3, 0), wx.EXPAND, (1, 2)), (self.goButton, (3, 2), wx.EXPAND, (1, 2))]
         
         for sizer, box in [(pepSizer, pepBox), (scanSizer, scanBox),
-                           (fileSizer, fileBox), (searchSizer, searchBox)]:
+                           (fileSizer, fileBox), (reportSizer, reportBox),
+                           (searchSizer, searchBox)]:
             for element in box:
                 if len(element) == 3:
                     widget, pos, flag = element
@@ -270,7 +282,10 @@ class CometGUI(wx.Frame):
         gbs.Add(searchSizer, (3, 2), flag = wx.EXPAND)
         gbs.Add(wx.StaticLine(self.pane, -1, style = wx.LI_HORIZONTAL), (4, 0),
                 span = (1, 3), flag = wx.EXPAND)
-        gbs.Add(fileSizer, (5, 0), span = (1, 3), flag = wx.EXPAND)
+        gbs.Add(reportSizer, (5, 0), span = (1, 3), flag = wx.ALIGN_CENTRE)
+        gbs.Add(wx.StaticLine(self.pane, -1, style = wx.LI_HORIZONTAL), (6, 0),
+                span = (1, 3), flag = wx.EXPAND)
+        gbs.Add(fileSizer, (7, 0), span = (1, 3), flag = wx.EXPAND)
         
         overBox = wx.BoxSizer()
         overBox.Add(gbs, 0, wx.ALL, 10)
@@ -427,10 +442,31 @@ class CometGUI(wx.Frame):
             wx.MessageBox('No data file selected.')
             return
         
-        searchObj = self.guiToPar()
+        
+        
+        rankval = self.maxRankCtrl.GetValue().strip()
+        expval = self.maxExpCtrl.GetValue().strip()
+        try:
+            if rankval:
+                most_rank = int(rankval)
+            else:
+                most_rank = None
+        except ValueError:
+            wx.MessageBox('Invalid value for rank cutoff (must be int): %s' % rankval)
+            return
+        try:
+            if expval:
+                most_exp = float(expval)
+            else:
+                most_exp = None
+        except ValueError:
+            wx.MessageBox('Invalid value for expectation value cutoff (must be decimal number): %s' % expval)
+            return
+        
+        searchObj = self.guiToPar()        
         
         # Async-ify this?
-        outputfile = searchObj.run_search(datafile)
+        outputfile = searchObj.run_search(datafile, most_rank = most_rank, most_exp = most_exp)
         wx.MessageBox('Search complete: output written to %s' % outputfile)
         
             

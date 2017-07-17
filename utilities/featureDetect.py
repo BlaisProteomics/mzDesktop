@@ -152,6 +152,8 @@ class DetectorSession(wx.Frame):
         wx.BeginBusyCursor()
         self.goButton.Enable(False)
         async.launch_process(feature_analysis, None, datafile, resultfiles, None, mzRegex, scanRegex)
+        #feature_analysis(datafile, resultfiles, None, mzRegex, 
+                        #scanRegex)
         self.goButton.Enable(True)
         wx.EndBusyCursor()
     

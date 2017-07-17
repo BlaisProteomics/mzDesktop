@@ -220,7 +220,7 @@ class FastaPanel(BasicTab):
             try:
                 self.toggleButtons(False)
                 def callback(outfile):
-                    print '\tReverse database written to %s.' % outfile
+                    print '\tPsuedo-reverse database written to %s.' % outfile
                     self.set_status("Wrote %s" % outfile, 1)
                 launch_process(fasta.pseudo_reverse, callback,
                                fastafile, output, enzyme = enzyme)
@@ -257,7 +257,7 @@ class FastaPanel(BasicTab):
             try:
                 self.toggleButtons(False)
                 def callback(outfile):
-                    print '\tReverse database written to %s.' % outfile
+                    print '\tPseudo-reverse database written to %s.' % outfile
                     self.set_status("Wrote %s" % outfile, 1)
                 launch_process(fasta.pseudo_reverse, callback,
                                fastafile, output, enzyme = enzyme, include_forward = True)

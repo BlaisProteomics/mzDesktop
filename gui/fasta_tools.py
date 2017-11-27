@@ -116,7 +116,7 @@ class FastaPanel(BasicTab):
         self.chooserCtrl.AppendText('; '.join(newfiles))
         
     def onSelector(self, event):
-        fastas = self.chooserCtrl.GetValue().split(';')
+        fastas = [x.strip() for x in self.chooserCtrl.GetValue().split(';')]
         outputs = []
         
         selector = self.selectorCtrl.GetValue().strip()
@@ -149,7 +149,7 @@ class FastaPanel(BasicTab):
             
             
     def invokeReverser(self, includeForward):
-        fastas = self.chooserCtrl.GetValue().split(';')
+        fastas = [x.strip() for x in self.chooserCtrl.GetValue().split(';')]
         outputs = []
 
         for fastafile in fastas:
@@ -192,7 +192,7 @@ class FastaPanel(BasicTab):
         self.invokeReverser(True)
         
     def onPseudoReverse(self, event):
-        fastas = self.chooserCtrl.GetValue().split(';')
+        fastas = [x.strip() for x in self.chooserCtrl.GetValue().split(';')]
         enzyme = self.pseudoRevEnzyme.GetValue()
         outputs = []
 
@@ -229,7 +229,7 @@ class FastaPanel(BasicTab):
         self.set_status("Ready", 0)
         
     def onPseudoForwardReverse(self, event):
-        fastas = self.chooserCtrl.GetValue().split(';')
+        fastas = [x.strip() for x in self.chooserCtrl.GetValue().split(';')]
         enzyme = self.pseudoForwardRevEnzyme.GetValue()
         outputs = []
 

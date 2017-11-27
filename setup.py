@@ -77,7 +77,7 @@ def get_data_files():
                 
 
 setup(name = 'mzDesktop',
-      version = '2.0',
+      version = '2.0.3',
       description = 'The multiplierz mzDesktop GUI toolset',
       author = 'William Max Alexander (et al.)',
       author_email = 'williamM_alexander@dfci.harvard.edu',

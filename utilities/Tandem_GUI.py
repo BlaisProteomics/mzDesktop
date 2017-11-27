@@ -9,6 +9,8 @@ import os, sys
 import re
 from collections import defaultdict
 
+mod_list = sorted(unimod.site_form_mod_names())
+
 xmlData = ['START ENZYMES',
            '[R]|[A-Z] is Arg-C',
            '[A-Z]|[D] is Asp-N',
@@ -252,10 +254,10 @@ nameToParameter = {'Enzyme':'protein, cleavage site',
                    'Mass':'spectrum, neutral loss mass',
                    'Window':'spectrum, neutral loss window',
                    'Enable Refinement Step':'refine',
-                   'Fixed Modifications':'refine, modification mass',
+                   #'Fixed Modifications':'refine, modification mass',
                    #'Variable Modifications':'refine, potential modification mass',
                    #'Maximum Expected Value': 'refine, maximum valid expectation value',
-                   'Use For Full Refinement':'refine, use potential modifications for full refinement',
+                   #'Use For Full Refinement':'refine, use potential modifications for full refinement',
                    #'Semi-Enzymatic Cleavage':'refine, cleavage semi', # Repeat.
                    'Point Mutations':'refine, point mutations',
                    'Unanticipated Cleavage':'refine, unanticipated cleavage',
@@ -299,22 +301,209 @@ def modNamesToAADeltaStr(mods):
         
     return ','.join(modstrs)
 
+def writeOutAADeltaStr(modmasses):
+    modstrings = []
+    for site, delta in modmasses:
+        modstr = '%s@%s' % (delta, site)
+        modstrings.append(modstr)
+    return ','.join(modstrings)
+
+#def parseAADeltaStr(deltastr):
+    #modmasses = []
+    #for substr in deltastr.split(','):
+        #if not substr: continue
+        #delta, site = [x.strip() for x in substr.split('@')]
+        #modmasses.append((site, float(delta)))
+    #return modmasses
+    
+
 # There's no information about the actual source of the mod
 # masses in the xtandem parameter file!
-def aaDeltaStrToMods(deltaStr):
+def parseAADeltaStr(deltaStr):
     if not deltaStr:
         return []
     
     mods = []
     for substr in deltaStr.split(','):
+        if not substr: continue
         substr = substr.strip()
         mass, site = substr.split('@')
         mods.append((float(mass), site))
     
     return mods
     
+
+
+
+
+class ModWidget(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+        
+        #self.title = wx.StaticText(self, -1, "Modifications")
+        self.fixmods = wx.ListCtrl(self, -1, name = "Fixed",
+                                   style = wx.LC_REPORT)
+        self.varmods = wx.ListCtrl(self, -1, name = "Variable",
+                                   style = wx.LC_REPORT)
+        self.modSelector = wx.ListCtrl(self, -1, name = "Unimods",
+                                       style = wx.LC_REPORT,
+                                       size = (250, -1))
+        self.addFixed = wx.Button(self, -1, '->', size = (25, -1))
+        self.addVar = wx.Button(self, -1,  '->', size = (25, -1))
+        self.clearFix = wx.Button(self, -1, 'Clr', size = (25, -1))
+        self.clearVar = wx.Button(self, -1, 'Clr', size = (25, -1))
+        self.searchBar = wx.TextCtrl(self, -1, '')
+        
+        self.fixLabel = wx.StaticText(self, -1, "Fixed Modifications")
+        self.varLabel = wx.StaticText(self, -1, "Variable Modifications")
+        
+        self.modSelector.AppendColumn('Mod')
+        self.modSelector.AppendColumn('Site')
+        self.full_mod_data = []
+        for modname in mod_list:
+            words = modname.split(' ')
+            basename = ' '.join(words[:-1])
+            site = words[-1].strip('()')
+            self.modSelector.Append([basename, site])
+            self.full_mod_data.append((basename, site))
+        sitecolsize = self.modSelector.GetColumnWidth(1)
+        self.modSelector.SetColumnWidth(0, 250 - sitecolsize)
+            
+        
+        self.fixmods.AppendColumn('Site')
+        self.fixmods.AppendColumn('Delta')
+        self.varmods.AppendColumn('Site')
+        self.varmods.AppendColumn('Delta')    
+        # Append blank rows to avoid annoying popup error.
+        self.fixmods.Append(['', ''])
+        self.varmods.Append(['', ''])
     
+        gbs = wx.GridBagSizer(5, 5)
+        gbs.Add(self.searchBar, (0, 0), flag = wx.EXPAND)
+        gbs.Add(self.modSelector, (1, 0), span = (7, 1), flag = wx.EXPAND)
+        gbs.Add(self.addFixed, (1, 1))
+        gbs.Add(self.addVar, (5, 1))
+        gbs.Add(self.clearFix, (3, 1), flag = wx.ALIGN_CENTER)
+        gbs.Add(self.clearVar, (7, 1), flag = wx.ALIGN_CENTER)
+        gbs.Add(self.fixLabel, (0, 2), flag = wx.ALIGN_BOTTOM)
+        gbs.Add(self.varLabel, (4, 2), flag = wx.ALIGN_BOTTOM)
+        gbs.Add(self.fixmods, (1, 2), span = (3, 1), flag = wx.EXPAND)
+        gbs.Add(self.varmods, (5, 2), span = (3, 1), flag = wx.EXPAND)
+        
+        gbs.AddGrowableRow(3)
+        gbs.AddGrowableRow(6)
+        
+        self.Bind(wx.EVT_BUTTON, self.assignFix, self.addFixed)
+        self.Bind(wx.EVT_BUTTON, self.assignVar, self.addVar)
+        self.Bind(wx.EVT_BUTTON, self.clearFixed, self.clearFix)
+        self.Bind(wx.EVT_BUTTON, self.clearVariable, self.clearVar)
+        self.Bind(wx.EVT_TEXT, self.filterMods, self.searchBar)
+        
+        self.SetSizerAndFit(gbs)
+        
+        self.oldFilterString = None
+        
+        self.Show()  
     
+    def updateFromModSelections(self, targetCtrl):    
+        index = self.modSelector.GetFirstSelected()
+        siteDeltas = []
+        while index != -1:
+            modname = self.modSelector.GetItem(index, 0).GetText()
+            sitename = self.modSelector.GetItem(index, 1).GetText()
+            delta = unimod.get_mod_delta(modname)
+            
+            if sitename == 'C-term':
+                findsites = ['C-term']
+            elif sitename == 'N-term':
+                findsites = ['N-term']
+            else:
+                findsites = sitename.split() 
+            
+            siteDeltas.append((findsites, float(delta)))
+            
+            index = self.modSelector.GetNextSelected(index)
+        
+        index = targetCtrl.GetTopItem()
+        ctrlDeltas = defaultdict(float)
+        while index != -1:
+            site = targetCtrl.GetItem(index, 0).GetText()
+            delta = targetCtrl.GetItem(index, 1).GetText()
+            if delta:
+                ctrlDeltas[site] = float(delta)
+            index = targetCtrl.GetNextItem(index)
+        
+        for sites, delta in siteDeltas:
+            for site in sites:
+                ctrlDeltas[site] += delta
+        
+        #targetCtrl.ClearAll()
+        #targetCtrl.AppendColumn('Site')
+        #targetCtrl.AppendColumn('Delta')
+        targetCtrl.DeleteAllItems()
+        for site, delta in sorted(ctrlDeltas.items()):
+            targetCtrl.Append((site, str(delta)))
+        
+        
+    def assignFix(self, event):
+        self.updateFromModSelections(self.fixmods)
+    def assignVar(self, event):
+        self.updateFromModSelections(self.varmods)
+        
+    def clearFixed(self, event):
+        self.fixmods.ClearAll()
+        self.fixmods.AppendColumn('Site')
+        self.fixmods.AppendColumn('Delta') 
+        self.fixmods.Append(['', ''])
+    def clearVariable(self, event):
+        self.varmods.ClearAll()
+        self.varmods.AppendColumn('Site')
+        self.varmods.AppendColumn('Delta')        
+        self.varmods.Append(['', ''])
+        
+    def filterMods(self, event):
+        filterstring = self.searchBar.GetValue().lower()
+        self.modSelector.ClearAll()
+        self.modSelector.AppendColumn('Mod')
+        self.modSelector.AppendColumn('Site')        
+        for name, site in self.full_mod_data:
+            if filterstring in name.lower():
+                self.modSelector.Append([name, site])
+        sitecolsize = self.modSelector.GetColumnWidth(1)
+        self.modSelector.SetColumnWidth(0, 250 - sitecolsize)
+        
+    def readmods(self):
+        varmods = []
+        for i in range(self.varmods.GetItemCount()):
+            site = self.varmods.GetItem(i, 0).GetText()
+            delta = self.varmods.GetItem(i, 1).GetText()
+            varmods.append((site, delta))
+        fixmods = []
+        for i in range(self.fixmods.GetItemCount()):
+            site = self.fixmods.GetItem(i, 0).GetText()
+            delta = self.fixmods.GetItem(i, 1).GetText()
+            fixmods.append((site, delta))        
+        return varmods, fixmods
+    
+    def write_varmods(self, modlist):
+        self.varmods.ClearAll()
+        self.varmods.AppendColumn('Site')
+        self.varmods.AppendColumn('Delta')
+        if not modlist:
+            self.varmods.Append(['', ''])
+        for modsite, modmass in modlist:
+            self.varmods.Append((modsite, modmass))
+            
+    def write_fixmods(self, modlist):
+        self.fixmods.ClearAll()
+        self.fixmods.AppendColumn('Site')
+        self.fixmods.AppendColumn('Delta')
+        if not modlist:
+            self.fixmods.Append(['', ''])
+        for modsite, modmass in modlist:
+            self.fixmods.Append((modsite, modmass))    
+        
+        
 
 
 class XTandemSearch(wx.Frame):
@@ -398,19 +587,19 @@ class XTandemSearch(wx.Frame):
                                       size = (80, -1),
                                       name = 'Enzyme')
         
-        #self.fixmodLabel = wx.TextBox(self, -1, "Fixed Modifications")
-        self.fixmodCtrl = wx.CheckListBox(pane, -1, choices = fixmods,
-                                          #style = wx.LB_SORT,
-                                          name = 'Fixed\nModifications',
-                                          size = (-1, 100))
-        #self.varmodLabel = wx.TextBox(self, -1, "Variable Modifications")
-        self.varmodCtrl = wx.CheckListBox(pane, -1, choices = varmods,
-                                          #style = wx.LB_SORT,
-                                          name = 'Variable\nModifications',
-                                          size = (-1, 100))
+        ##self.fixmodLabel = wx.TextBox(self, -1, "Fixed Modifications")
+        #self.fixmodCtrl = wx.CheckListBox(pane, -1, choices = fixmods,
+                                          ##style = wx.LB_SORT,
+                                          #name = 'Fixed\nModifications',
+                                          #size = (-1, 100))
+        ##self.varmodLabel = wx.TextBox(self, -1, "Variable Modifications")
+        #self.varmodCtrl = wx.CheckListBox(pane, -1, choices = varmods,
+                                          ##style = wx.LB_SORT,
+                                          #name = 'Variable\nModifications',
+                                          #size = (-1, 100))
         
-        self.Bind(wx.EVT_CHECKLISTBOX, self.copyModsToRefine, self.fixmodCtrl)
-        self.Bind(wx.EVT_CHECKLISTBOX, self.copyModsToRefine, self.varmodCtrl)
+        #self.Bind(wx.EVT_CHECKLISTBOX, self.copyModsToRefine, self.fixmodCtrl)
+        #self.Bind(wx.EVT_CHECKLISTBOX, self.copyModsToRefine, self.varmodCtrl)
         
         #self.cleavageLabel = wx.TextBox(self, -1, "Missed Cleavages")
         self.cleavageBox = wx.TextCtrl(pane, -1, value = "2", 
@@ -446,8 +635,7 @@ class XTandemSearch(wx.Frame):
                                     name = 'Mass Type',
                                     value = 'Monoisotopic')
         
-        self.primaryControls = [self.enzymeCtrl, self.fixmodCtrl,
-                                self.varmodCtrl, self.cleavageBox, self.precursorTol,
+        self.primaryControls = [self.enzymeCtrl, self.cleavageBox, self.precursorTol,
                                 self.precursorUnit, self.fragmentTol, self.fragmentUnit,
                                 self.maxExpectationValue, self.isotopeError,
                                 self.massType]
@@ -534,16 +722,16 @@ class XTandemSearch(wx.Frame):
                                        name = 'Enable Refinement Step')
         self.Bind(wx.EVT_CHECKBOX, self.toggleRefine, self.refineCheck)
         
-        # Dunno WHY XTandem allows refinement-specific fixed modifications, but it does.
-        self.refineFixMods = wx.CheckListBox(self, -1, choices = fixmods,
-                                             name = 'Refinement Fixed\nModifications',
-                                             size = (-1, 100))
-        self.refineVarMods = wx.CheckListBox(self, -1, choices = varmods,
-                                             name = 'Refinement Variable\nModifications',
-                                             size = (-1, 100))
+        ## Dunno WHY XTandem allows refinement-specific fixed modifications, but it does.
+        #self.refineFixMods = wx.CheckListBox(self, -1, choices = fixmods,
+                                             #name = 'Refinement Fixed\nModifications',
+                                             #size = (-1, 100))
+        #self.refineVarMods = wx.CheckListBox(self, -1, choices = varmods,
+                                             #name = 'Refinement Variable\nModifications',
+                                             #size = (-1, 100))
         
-        self.refineFixLabel = wx.StaticText(pane, -1, "Refinement Fixed\nModifications")
-        self.refineVarLabel = wx.StaticText(pane, -1, "Refinement Variable\nModifications")
+        #self.refineFixLabel = wx.StaticText(pane, -1, "Refinement Fixed\nModifications")
+        #self.refineVarLabel = wx.StaticText(pane, -1, "Refinement Variable\nModifications")
         
         self.refineMaxExpLabel = wx.StaticText(pane, -1, 'Maximum Expectation Value')
         self.refineMaxExpLabel.SetToolTip(wx.ToolTip(nameToHelptext['Maximum Expectation Value']))
@@ -561,20 +749,18 @@ class XTandemSearch(wx.Frame):
         #self.refineUseAnnotations = wx.CheckBox(pane, -1, 'Refine With Annotation File',
                                                 #name = 'Refine With Annotation File')
         
-        self.refineFixed = wx.CheckBox(pane, -1, "Use Main Fixed Mod List",
-                                       name = "Use For Full Refinement, Fixed")
-        self.refineFull = wx.CheckBox(pane, -1, 'Use Main Variable Mod List',
-                                      name = 'Use For Full Refinement')
+        #self.refineFixed = wx.CheckBox(pane, -1, "Use Main Fixed Mod List",
+                                       #name = "Use For Full Refinement, Fixed")
+        #self.refineFull = wx.CheckBox(pane, -1, 'Use Main Variable Mod List',
+                                      #name = 'Use For Full Refinement')
         
-        self.Bind(wx.EVT_CHECKBOX, self.modBindToggle, self.refineFixed)
-        self.Bind(wx.EVT_CHECKBOX, self.modBindToggle, self.refineFull)
+        #self.Bind(wx.EVT_CHECKBOX, self.modBindToggle, self.refineFixed)
+        #self.Bind(wx.EVT_CHECKBOX, self.modBindToggle, self.refineFull)
         
-        self.refineControls = [self.refineFixMods, self.refineVarMods,
-                               self.refineFixLabel, self.refineVarLabel,
-                               self.refineMaxExpVal, self.refineSemiEznyme,
+        self.refineControls = [self.refineMaxExpVal, self.refineSemiEznyme,
                                self.refineUnanticiaptedClvg, self.refinePtMutations,
-                               self.refineSpectrumSynth, self.refineFixed,
-                               self.refineFull, #self.refineUseAnnotations,
+                               self.refineSpectrumSynth, #self.refineFixed,
+                               #self.refineFull, #self.refineUseAnnotations,
                                self.refineMaxExpLabel]
         self.toggleRefine(None)
         self.toggleNoiseSup(None)
@@ -617,14 +803,14 @@ class XTandemSearch(wx.Frame):
         primarySizer.Add(mainLabel, (0, 0), span = (1, 3), border = 10,
                          flag = wx.ALIGN_CENTRE | wx.BOTTOM)
         
-        topMain = wx.GridBagSizer(2, 2)  
-        topMain.Add(wx.StaticText(pane, -1, 'Fixed\nModifications'),
-                    (0, 0), flag = wx.ALIGN_LEFT)
-        topMain.Add(self.fixmodCtrl, (1, 0), flag = wx.EXPAND)
-        topMain.Add(wx.StaticText(pane, -1, "Variable\nModifications"),
-                    (0, 1), flag = wx.ALIGN_LEFT)
-        topMain.Add(self.varmodCtrl, (1, 1), flag = wx.EXPAND)
-        
+        #topMain = wx.GridBagSizer(2, 2)  
+        #topMain.Add(wx.StaticText(pane, -1, 'Fixed\nModifications'),
+                    #(0, 0), flag = wx.ALIGN_LEFT)
+        #topMain.Add(self.fixmodCtrl, (1, 0), flag = wx.EXPAND)
+        #topMain.Add(wx.StaticText(pane, -1, "Variable\nModifications"),
+                    #(0, 1), flag = wx.ALIGN_LEFT)
+        #topMain.Add(self.varmodCtrl, (1, 1), flag = wx.EXPAND)
+        self.modwidget = ModWidget(self.pane)
 
         tolSizer = wx.GridBagSizer(5, 2)
         self.addWithLabel(tolSizer, self.precursorTol, (0, 0))
@@ -654,9 +840,11 @@ class XTandemSearch(wx.Frame):
                        (4, 0), span = (1, 2), flag = wx.ALIGN_RIGHT)
         subprimary.Add(self.maxExpectationValue,
                        (4, 2), flag = wx.ALIGN_LEFT)
+        subprimary.Add(wx.StaticLine(pane, -1, style = wx.LI_HORIZONTAL),
+                        (5, 0), span = (1, 4), flag = wx.ALL | wx.EXPAND)
         #subprimary.Add()
         
-        primarySizer.Add(topMain, (1, 0), span = (2, 1), border = 5, flag = wx.RIGHT | wx.EXPAND)
+        primarySizer.Add(self.modwidget, (1, 0), span = (4, 1), border = 5, flag = wx.RIGHT | wx.EXPAND)
         primarySizer.Add(subprimary, (1, 1), span = (1, 2), border = 5, flag = wx.LEFT | wx.EXPAND)
 
         
@@ -668,7 +856,9 @@ class XTandemSearch(wx.Frame):
         ionCtrlSizer.Add(self.cyclicPerCtrl, (4, 1))
         
         self.addWithLabel(ionCtrlSizer, self.minIonCount, (5, 0))
-
+        ionCtrlSizer.Add(wx.StaticLine(pane, -1, style = wx.LI_HORIZONTAL),
+                        (6, 0), span = (1, 4), flag = wx.ALL | wx.EXPAND)
+        primarySizer.Add(ionCtrlSizer, (2, 1), flag = wx.ALIGN_CENTRE)
         
         proteinSizer = wx.GridBagSizer(5, 5)
         proteinSizer.Add(proteinLabel, (0, 0), span = (1, 3), border = 10,
@@ -684,7 +874,7 @@ class XTandemSearch(wx.Frame):
                          flag = wx.ALIGN_LEFT | wx.TOP)
         #proteinSizer.Add(self.useAnnotationsCtrl, (4, 1), span = (1, 3),
                          #flag = wx.ALIGN_LEFT )
-        
+        primarySizer.Add(proteinSizer, (3, 1))
         
         spectrumSizer = wx.GridBagSizer(5, 5)
         spectSetSizer = wx.GridBagSizer(5, 5)
@@ -715,23 +905,23 @@ class XTandemSearch(wx.Frame):
         
  
         refModSizer = wx.GridBagSizer(5, 5)
-        refModSizer.Add(self.refineFixLabel, (0, 0))
-        refModSizer.Add(self.refineFixed, (1, 0))
-        refModSizer.Add(self.refineFixMods, (2, 0), flag = wx.EXPAND)
-        refModSizer.Add(self.refineVarLabel, (0, 1))
-        refModSizer.Add(self.refineFull, (1, 1))
-        refModSizer.Add(self.refineVarMods, (2, 1), flag = wx.EXPAND)
+        #refModSizer.Add(self.refineFixLabel, (0, 0))
+        #refModSizer.Add(self.refineFixed, (1, 0))
+        #refModSizer.Add(self.refineFixMods, (2, 0), flag = wx.EXPAND)
+        #refModSizer.Add(self.refineVarLabel, (0, 1))
+        #refModSizer.Add(self.refineFull, (1, 1))
+        #refModSizer.Add(self.refineVarMods, (2, 1), flag = wx.EXPAND)
         
-        subRefine = wx.GridBagSizer(10, 10)
+        subRefine = wx.GridBagSizer(5, 5)
         #subRefine.Add(self.refineFull, (0, 0))
         subRefine.Add(self.refineSemiEznyme, (0, 0))
-        subRefine.Add(self.refineUnanticiaptedClvg, (1, 0))
-        subRefine.Add(self.refinePtMutations, (2, 0))
-        subRefine.Add(self.refineSpectrumSynth, (3, 0))
-        #subRefine.Add(self.refineUseAnnotations, (4, 0))
+        subRefine.Add(self.refineUnanticiaptedClvg, (0, 1))
+        subRefine.Add(self.refinePtMutations, (0, 2))
+        subRefine.Add(self.refineSpectrumSynth, (1, 0))
+        #subRefine.Add(self.refineUseAnnotations, (1, 0))
         
-        subRefine.Add(self.refineMaxExpLabel, (5, 0), flag = wx.ALIGN_RIGHT)
-        subRefine.Add(self.refineMaxExpVal, (5, 1))
+        subRefine.Add(self.refineMaxExpLabel, (1, 1), flag = wx.ALIGN_RIGHT)
+        subRefine.Add(self.refineMaxExpVal, (1, 2))
         
         refineSizer = wx.GridBagSizer(5, 5)
         refineSizer.Add(self.refineCheck, (0, 0), span = (1, 4), border = 10,
@@ -761,12 +951,12 @@ class XTandemSearch(wx.Frame):
         box = wx.BoxSizer(wx.VERTICAL)
         box.Add(primarySizer, 0, wx.ALL | wx.EXPAND, 5)
         box.Add(wx.StaticLine(pane, -1, style = wx.LI_HORIZONTAL), 0, wx.ALL | wx.EXPAND, 5)
-        subbox = wx.BoxSizer(wx.HORIZONTAL)
-        subbox.Add(ionCtrlSizer, 0, wx.ALL, 5)
-        subbox.Add(wx.StaticLine(pane, -1, style = wx.LI_VERTICAL), 0, wx.ALL | wx.EXPAND, 5)
-        subbox.Add(proteinSizer, 0, wx.ALL, 5)
-        box.Add(subbox, 0, wx.ALL | wx.ALIGN_CENTRE, 5)
-        box.Add(wx.StaticLine(pane, -1, style = wx.LI_HORIZONTAL), 0, wx.ALL | wx.EXPAND, 5)
+        #subbox = wx.BoxSizer(wx.HORIZONTAL)
+        #subbox.Add(ionCtrlSizer, 0, wx.ALL, 5)
+        #subbox.Add(wx.StaticLine(pane, -1, style = wx.LI_VERTICAL), 0, wx.ALL | wx.EXPAND, 5)
+        #subbox.Add(proteinSizer, 0, wx.ALL, 5)
+        #box.Add(subbox, 0, wx.ALL | wx.ALIGN_CENTRE, 5)
+        #box.Add(wx.StaticLine(pane, -1, style = wx.LI_HORIZONTAL), 0, wx.ALL | wx.EXPAND, 5)
         box.Add(spectrumLabel, 0, wx.ALIGN_CENTRE | wx.BOTTOM, 5)
         box.Add(spectrumSizer, 0, wx.ALL | wx.ALIGN_CENTRE, 5)
         box.Add(wx.StaticLine(pane, -1, style = wx.LI_HORIZONTAL), 0, wx.ALL | wx.EXPAND, 5)
@@ -782,10 +972,10 @@ class XTandemSearch(wx.Frame):
         pane.SetSizerAndFit(overBox)
         self.SetClientSize(pane.GetSize())
         
-        leftsize, rightsize = self.fixmodCtrl.GetSize(), self.varmodCtrl.GetSize()
-        equalwidth = (leftsize[0] + rightsize[0]) / 2
-        self.fixmodCtrl.SetSize((equalwidth, leftsize[1]))
-        self.varmodCtrl.SetSize((equalwidth, rightsize[1]))
+        #leftsize, rightsize = self.fixmodCtrl.GetSize(), self.varmodCtrl.GetSize()
+        #equalwidth = (leftsize[0] + rightsize[0]) / 2
+        #self.fixmodCtrl.SetSize((equalwidth, leftsize[1]))
+        #self.varmodCtrl.SetSize((equalwidth, rightsize[1]))
         
         overBox.Layout()
         #self.Fit()
@@ -1019,35 +1209,42 @@ class XTandemSearch(wx.Frame):
             #refinefixmodstr = searchObj['refine'].get('modification mass', '')
             #refinevarmodstr = searchObj['refine'].get('potential modification mass')
         
-        fixmods = aaDeltaStrToMods(fixmodstr)
-        varmods = aaDeltaStrToMods(varmodstr)
+        fixmods = parseAADeltaStr(fixmodstr)
+        varmods = parseAADeltaStr(varmodstr)
+        # IF refine mods is defined and has a mod list, we'll take that instead,
+        # since that represents the "real" expected mod list.  Eh!
         if searchObj['refine']['']:
             refinefixmodstr = searchObj['refine'].get('modification mass', '')
-            refinefixmods = aaDeltaStrToMods(refinefixmodstr) 
+            if refinefixmodstr:
+                fixmods = parseAADeltaStr(refinefixmodstr) 
             refinevarmodstr = searchObj['refine'].get('potential modification mass', '')
-            refinevarmods = aaDeltaStrToMods(refinevarmodstr)
-        else:
-            refinefixmods = []
-            refinevarmods = []
+            if refinevarmodstr:
+                varmods = parseAADeltaStr(refinevarmodstr)
+        #else:
+            #refinefixmods = []
+            #refinevarmods = []
             
-        for mass, site in fixmods:
-            modstring = '%f (%s)' % (mass, site)
-            self.fixmodCtrl.Insert(modstring, 0)
-            self.fixmodCtrl.Check(0)
-        for mass, site in varmods:
-            modstring = '%f (%s)' % (mass, site)
-            self.varmodCtrl.Insert(modstring, 0)
-            self.varmodCtrl.Check(0)
-        if refinefixmods: # Can be None
-            for mass, site in refinefixmods:
-                modstring = '%f (%s)' % (mass, site)
-                self.refineFixMods.Insert(modstring, 0)
-                self.refineFixMods.Check(0)
-        if refinevarmods:
-            for mass, site in refinevarmods:
-                modstring = '%f (%s)' % (mass, site)
-                self.refineVarMods.Insert(modstring, 0)        
-                self.refineVarMods.Check(0)
+        #for mass, site in fixmods:
+            #modstring = '%f (%s)' % (mass, site)
+            #self.fixmodCtrl.Insert(modstring, 0)
+            #self.fixmodCtrl.Check(0)
+        #for mass, site in varmods:
+            #modstring = '%f (%s)' % (mass, site)
+            #self.varmodCtrl.Insert(modstring, 0)
+            #self.varmodCtrl.Check(0)
+        #if refinefixmods: # Can be None
+            #for mass, site in refinefixmods:
+                #modstring = '%f (%s)' % (mass, site)
+                #self.refineFixMods.Insert(modstring, 0)
+                #self.refineFixMods.Check(0)
+        #if refinevarmods:
+            #for mass, site in refinevarmods:
+                #modstring = '%f (%s)' % (mass, site)
+                #self.refineVarMods.Insert(modstring, 0)        
+                #self.refineVarMods.Check(0)
+        
+        self.modwidget.write_varmods(varmods)
+        self.modwidget.write_fixmods(fixmods)
         
         self.maxExpectationValue.SetValue(searchObj['output']['maximum valid expectation value'])
         self.refineMaxExpVal.SetValue(searchObj['refine']['maximum valid expectation value'])
@@ -1093,16 +1290,22 @@ class XTandemSearch(wx.Frame):
         searchobj['spectrum']['parent monoisotopic mass error minus'] = halftol
         searchobj['spectrum']['parent monoisotopic mass error plus'] = halftol
         
-        fixmods = self.fixmodCtrl.GetCheckedStrings()
-        varmods = self.varmodCtrl.GetCheckedStrings()
-        searchobj['residue']['modification mass'] = modNamesToAADeltaStr(fixmods)
-        searchobj['residue']['potential modification mass'] = modNamesToAADeltaStr(varmods)
+        #fixmods = self.fixmodCtrl.GetCheckedStrings()
+        #varmods = self.varmodCtrl.GetCheckedStrings()
+        #searchobj['residue']['modification mass'] = modNamesToAADeltaStr(fixmods)
+        #searchobj['residue']['potential modification mass'] = modNamesToAADeltaStr(varmods)
+        #if self.refineCheck.GetValue():
+            #refinefixmods = self.refineFixMods.GetCheckedStrings()
+            #refinevarmods = self.refineVarMods.GetCheckedStrings()
+            #searchobj['refine']['modification mass'] = modNamesToAADeltaStr(refinefixmods)
+            #searchobj['refine']['potential modification mass'] = modNamesToAADeltaStr(refinevarmods)
+        varmods, fixmods = map(writeOutAADeltaStr, self.modwidget.readmods())
+        searchobj['residue']['modification mass'] = fixmods
+        searchobj['residue']['potential modification mass'] = varmods
         if self.refineCheck.GetValue():
-            refinefixmods = self.refineFixMods.GetCheckedStrings()
-            refinevarmods = self.refineVarMods.GetCheckedStrings()
-            searchobj['refine']['modification mass'] = modNamesToAADeltaStr(refinefixmods)
-            searchobj['refine']['potential modification mass'] = modNamesToAADeltaStr(refinevarmods)
-            
+            searchobj['refine']['modification mass'] = fixmods
+            searchobj['refine']['potential modification mass'] = varmods
+        
         searchobj.fasta_files = self.fastaCtrl.GetValue().split('; ')
         
         parfilename = self.parCtrl.GetValue()

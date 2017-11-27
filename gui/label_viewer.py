@@ -1371,7 +1371,7 @@ class LabelPanel(BasicTab):
         #self.gb.Add(self.peakPlot, (7, 4), (6, 6), flag = wx.EXPAND)
         self.gb.Add(self.scanPlot, (2, 4), (11, 6), flag = wx.EXPAND)
     
-        self.gb.Add(self.settingsBox, (13, 0), (1, 4), flag = wx.EXPAND)
+        #self.gb.Add(self.settingsBox, (13, 0), (1, 4), flag = wx.EXPAND)
         self.gb.Add(self.scaleControl, (13, 4), flag = wx.ALIGN_LEFT)
         self.gb.Add(scrollerBox, (13, 5), (1, 4), flag = wx.ALIGN_CENTRE)
     

@@ -88,7 +88,7 @@ class MascotPanel(wx.Frame):
             return (wx.StaticText(pane, -1, label),
                     wx.TextCtrl(pane, -1, name = label.replace('\n', ' ')))
         
-        def checkCtrl(label, choices, size = None):
+        def checkCtrl(label, choices, size = wx.Size(-1, -1)):
             return (wx.StaticText(pane, -1, label),
                     wx.CheckListBox(pane, -1, choices = choices,
                                     name = label.replace('\n', ' '),
@@ -242,10 +242,13 @@ class MascotPanel(wx.Frame):
         if settings.get_mascot_security():
             self.ms.login(self.login, self.password)
         fields = self.ms.get_fields(settings.get_mascot_version()) # Error presentation?
+        #fields = self.ms.get_fields_better()
         
         self.DATABASES = fields['DB']
         self.SHORTMODS = sorted(list(set(fields['IT_MODS'] + fields['MODS'])))
-        self.LONGMODS = sorted(fields['ALLMODS'])
+        self.LONGMODS = (sorted(fields['ALLMODS'], key = lambda x: x.lower())
+                         if 'ALLMODS' in fields else
+                         sorted(fields['HIDDEN_MODS']))
         #self.FIXMODS = fields['MASTER_MODS']
         self.ENZYMES = fields['CLE']
         self.CHARGES = fields['CHARGE']
@@ -454,7 +457,8 @@ class MascotPanel(wx.Frame):
                                                       max_hits = 999999,
                                                       show_query_data = self.showData.GetValue(),
                                                       show_same_set = self.sameSet.GetValue(),
-                                                      show_sub_set = self.subSet.GetValue())[0]
+                                                      show_sub_set = self.subSet.GetValue(),
+                                                      include_search_number = True)[0]
                     if self.combineSpectra.GetValue():
                         resultfile = combine_accessions(resultfile, resultfile)
                     if self.fdr_filter.GetValue():
@@ -470,8 +474,16 @@ class MascotPanel(wx.Frame):
                                   "Could not run search.")   
                     raise err
                 finally:
-                    wx.EndBusyCursor()
+                    wx.EndBusyCursor()            
                     self.goButton.Enable(True)
+
+        # These are here AND in finally clauses so that they're hit
+        # after an empty loop or when something throws an exception.
+        try:
+            wx.EndBusyCursor()            
+        except:
+            pass
+        self.goButton.Enable(True)        
 
         assert result_ids, 'No successful search results.'
         if not self.downloadSearch.GetValue():

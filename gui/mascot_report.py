@@ -345,10 +345,11 @@ class MascotReportPanel(BasicTab):
                                            login_name = self.login_text.GetValue(),
                                            password = self.password_text.GetValue(),
                                            keep_dat = self.keep_dat.IsChecked(),
-                                           pep2gene = self.p2gField.GetValue() if self.p2gCheck.GetValue() else None
+                                           pep2gene = self.p2gField.GetValue() if self.p2gCheck.GetValue() else None,
+                                           include_search_number = True
                                            )
-        
-        
+            
+            
             if self.combine_accessions.GetValue():
                 print "Combining redundant peptide reports..."
                 for result in results:

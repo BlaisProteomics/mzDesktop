@@ -25,7 +25,14 @@ import re
 import shutil
 import sys
 import time
+
+try:
+    import wxversion
+    wxversion.select('3')
+except:
+    print "wx version 3 not found!  Some GUI elements may break or throw exceptions."
 import wx
+print wx.version()
 
 import matplotlib
 matplotlib.use('WXAgg') # Prevents an obscure error that sometimes crops up.
@@ -147,7 +154,7 @@ if __name__ == '__main__':
         #Splash Screen
         # This causes a popup error message for some reason; suppressing that
         # by disabling logging temporarily.
-        wx.Log_EnableLogging(False)
+        #wx.Log_EnableLogging(False)
         try:
             wx.SplashScreen(wx.Image(os.path.join(install_dir,
                             'images', 'multiplierzlogo.png')).ConvertToBitmap(),
@@ -155,7 +162,7 @@ if __name__ == '__main__':
                             500, main_frame, -1)
         except:
             pass
-        wx.Log_EnableLogging(True)
+        #wx.Log_EnableLogging(True)
         wx.Yield()        
 
         main_frame.Show()

@@ -508,8 +508,8 @@ class MultiplierzFrame(wx.Frame):
             # not entirely desired behavior.            
             self.nb.AddPage(page, t)
 
-        self.nb.GetTreeCtrl().SetMinSize((150, -1))
-        self.nb.GetTreeCtrl().SetSize((150, -1))
+        #self.nb.GetTreeCtrl().SetMinSize((150, -1))
+        #self.nb.GetTreeCtrl().SetSize((150, -1))
         self.nb.SetDoubleBuffered(1)
         
         self.Show()
@@ -518,7 +518,7 @@ class MultiplierzFrame(wx.Frame):
         #self.nb.Tile()
         self.nb.Refresh()
         
-        self.nb.Selection = 0
+        #self.nb.Selection = 0
 
     def on_exit(self, event):
         #logger_message(level=20, message='Cleaning up image folder')
@@ -530,12 +530,14 @@ class MultiplierzFrame(wx.Frame):
         sys.exit()
 
     def on_preferences(self, event):
+        from preferences import PreferencesFrame
         wx.BeginBusyCursor(wx.HOURGLASS_CURSOR)
         preferences_frame = PreferencesFrame(self)
         preferences_frame.Show()
         wx.EndBusyCursor()
 
     def on_peak_viewer(self, event):
+        from peak_viewer import PeakViewer
         wx.BeginBusyCursor(wx.HOURGLASS_CURSOR)
         peak_viewer_frame = PeakViewer(self)
         peak_viewer_frame.Show()
@@ -543,6 +545,7 @@ class MultiplierzFrame(wx.Frame):
         wx.EndBusyCursor()
 
     def on_report_viewer(self, event):
+        from report_viewer import ReportViewer
         file_name = mzGUI.report_chooser()
 
         if file_name:
@@ -552,11 +555,11 @@ class MultiplierzFrame(wx.Frame):
             report_viewer.Show()
             wx.EndBusyCursor()
 
-    def on_full_report(self, event):
-        wx.BeginBusyCursor(wx.HOURGLASS_CURSOR)
-        full_rep = FullReportWindow(self)
-        full_rep.Show()
-        wx.EndBusyCursor()
+    #def on_full_report(self, event):
+        #wx.BeginBusyCursor(wx.HOURGLASS_CURSOR)
+        #full_rep = FullReportWindow(self)
+        #full_rep.Show()
+        #wx.EndBusyCursor()
 
     def on_pep2gene(self, event):
         wx.BeginBusyCursor(wx.HOURGLASS_CURSOR)
@@ -631,7 +634,7 @@ class MultiplierzFrame(wx.Frame):
             writeBack = lambda x: self.statusbar.SetStatusText(x, 1)
             mascot.runMascotSearch(self, writeBack)
         except Exception as err:
-            messdog = wx.MessageDialog(self, str(err), style = wx.OK)        
+            messdog = wx.MessageDialog(self, repr(err), style = wx.OK)        
             messdog.ShowModal()
             raise err        
 
@@ -644,8 +647,7 @@ from mzDesktop import install_dir
 
 
 
-from full_report import FullReportWindow
-from peak_viewer import PeakViewer
-from report_viewer import ReportViewer
+#from full_report import FullReportWindow
 
-from preferences import PreferencesFrame
+
+

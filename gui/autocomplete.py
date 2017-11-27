@@ -30,8 +30,12 @@ __url__  = "http://bitbucket.org/raz/wxautocompletectrl"
 # also command history.
 
 import wx
+import wx.html
 
-
+try:
+    htmllistbox = wx.HtmlListBox
+except:
+    htmllistbox = wx.html.HtmlListBox
 
 template = "%s<b><u>%s</b></u>%s"
 
@@ -51,6 +55,7 @@ def list_completer(a_list):
     return completer
 
 
+
 class SuggestionsPopup(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(
@@ -61,7 +66,7 @@ class SuggestionsPopup(wx.Frame):
         self._suggestions.SetItemCount(0)
         self._unformated_suggestions = None
 
-    class _listbox(wx.HtmlListBox):
+    class _listbox(htmllistbox):
         items = None
 
         def OnGetItem(self, n):

@@ -448,17 +448,18 @@ class CometGUI(wx.Frame):
         #topSizer.Add()
         gbs.Add(topLabel, (0, 0), span = (1, 3), flag = wx.ALIGN_CENTRE)
         #gbs.Add(modSizer, (1, 0), span = (3, 2), flag = wx.EXPAND | wx.RIGHT)
-        gbs.Add(self.modWidget, (1, 0), span = (3, 2), flag = wx.EXPAND | wx.RIGHT)
+        gbs.Add(self.modWidget, (1, 0), span = (4, 2), flag = wx.EXPAND | wx.RIGHT)
         gbs.Add(scanSizer, (1, 2), flag = wx.EXPAND | wx.LEFT)
         #gbs.Add(ionSizer, (2, 0), flag = wx.EXPAND)
         gbs.Add(pepSizer, (2, 2), flag = wx.ALIGN_CENTRE | wx.LEFT)
         gbs.Add(searchSizer, (3, 2), flag = wx.EXPAND)
-        gbs.Add(wx.StaticLine(self.pane, -1, style = wx.LI_HORIZONTAL), (4, 0),
+        gbs.Add(ionSizer, (4, 2), flag = wx.EXPAND)
+        gbs.Add(wx.StaticLine(self.pane, -1, style = wx.LI_HORIZONTAL), (5, 0),
                 span = (1, 3), flag = wx.EXPAND)
-        gbs.Add(reportSizer, (5, 0), span = (1, 3), flag = wx.ALIGN_CENTRE)
-        gbs.Add(wx.StaticLine(self.pane, -1, style = wx.LI_HORIZONTAL), (6, 0),
+        gbs.Add(reportSizer, (6, 0), span = (1, 3), flag = wx.ALIGN_CENTRE)
+        gbs.Add(wx.StaticLine(self.pane, -1, style = wx.LI_HORIZONTAL), (7, 0),
                 span = (1, 3), flag = wx.EXPAND)
-        gbs.Add(fileSizer, (7, 0), span = (1, 3), flag = wx.EXPAND)
+        gbs.Add(fileSizer, (8, 0), span = (1, 3), flag = wx.EXPAND)
         
         overBox = wx.BoxSizer()
         overBox.Add(gbs, 0, wx.ALL, 10)

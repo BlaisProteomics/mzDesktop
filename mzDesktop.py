@@ -28,9 +28,9 @@ import time
 
 try:
     import wxversion
-    wxversion.select('3')
+    wxversion.select('4')
 except:
-    print "wx version 3 not found!  Some GUI elements may break or throw exceptions."
+    print "wx version 4 not found!  Some GUI elements may break or throw exceptions."
 import wx
 print wx.version()
 

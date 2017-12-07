@@ -97,7 +97,40 @@ FixModFields = [('G', 'add_G_glycine'),
 
 
 
+class ModDog(wx.Dialog):
+    def __init__(self, parent, *etc, **etcetc):
+        wx.Dialog.__init__(self, parent, *etc, **etcetc)
+        
+        aminolabel = wx.StaticText(self, -1, "Amino Acid")
+        self.amino = wx.TextCtrl(self, -1)
+        fixButton = wx.Button(self, -1, "Add As Fixed")
+        varButton = wx.Button(self, -1, "Add As Variable")
+        cancelButton = wx.Button(self, -1, "Cancel")
+        
+        gbs = wx.GridBagSizer(10, 10)
+        gbs.Add(aminolabel, (0, 0))
+        gbs.Add(self.amino, (0, 1))
+        gbs.Add(cancelButton, (1, 0))
+        gbs.Add(fixButton, (1, 1), flag = wx.ALIGN_RIGHT)
+        gbs.Add(varButton, (1, 2))
+        
+        self.SetSizerAndFit(gbs)
+        self.Show()
+        
+        self.Bind(wx.EVT_BUTTON, self.returnFixed, fixButton)
+        self.Bind(wx.EVT_BUTTON, self.returnVar, varButton)
+        self.Bind(wx.EVT_BUTTON, self.cancel, cancelButton)
 
+        self.mod = None, None
+    
+    def returnFixed(self, event):
+        self.mod = self.amino.GetValue(), 'Fixed'
+        self.Destroy()
+    def returnVar(self, event):
+        self.mod = self.amino.GetValue(), 'Var'
+        self.Destroy()
+    def cancel(self, event):
+        self.Destroy()
 
 class ModWidget(wx.Panel):
     def __init__(self, parent):
@@ -161,6 +194,7 @@ class ModWidget(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.clearFixed, self.clearFix)
         self.Bind(wx.EVT_BUTTON, self.clearVariable, self.clearVar)
         self.Bind(wx.EVT_TEXT, self.filterMods, self.searchBar)
+        self.searchBar.Bind(wx.EVT_RIGHT_UP, self.addNumberMod)
         
         self.SetSizerAndFit(gbs)
         
@@ -234,7 +268,35 @@ class ModWidget(wx.Panel):
                 self.modSelector.Append([name, site])
         sitecolsize = self.modSelector.GetColumnWidth(1)
         self.modSelector.SetColumnWidth(0, 250 - sitecolsize)
+        event.Skip()
+    
+    def addNumberMod(self, event):
+        print "FOO"
+        numberstring = self.searchBar.GetValue().lower()
+        try:
+            mass = float(numberstring)
+        except ValueError:
+            return
         
+        askdog = ModDog(self)
+        askdog.ShowModal()
+        amino, modtype = askdog.mod
+        if not amino:
+            print "No valid amino acid specified."
+            return
+        
+        if modtype == 'Fixed':
+            targetCtrl = self.fixmods
+        elif modtype == 'Var':
+            targetCtrl = self.varmods
+        else:
+            raise Exception, modtype
+        if len(amino) > 1 and 'term' not in amino.lower():
+            amino = amino[:1]
+        targetCtrl.Append((amino, mass))
+        
+        
+    
     def readmods(self):
         varmods = []
         for i in range(self.varmods.GetItemCount()):
@@ -280,7 +342,8 @@ class CometGUI(wx.Frame):
         button = wx.Button(self.pane, -1, "Browse")
         if bind:
             def browse(event):
-                filename = file_chooser('Select %s' % name, mode = 'r')
+                filename = file_chooser('Select %s' % name, mode = 'r',
+                                        parent_obj = self)
                 if filename:
                     ctrl.SetValue(filename)
             self.Bind(wx.EVT_BUTTON, browse, button)
@@ -579,7 +642,7 @@ class CometGUI(wx.Frame):
         
     def load_parameters(self, event):
         loadfile = file_chooser(title = 'Open parameter file:',
-                                mode = 'r')
+                                mode = 'r', parent_obj = self)
         if loadfile:
             self.parfileCtrl.SetValue(loadfile)
             if os.path.exists(loadfile):
@@ -592,10 +655,10 @@ class CometGUI(wx.Frame):
             savefile = file_chooser(title = 'Save parameter file to:',
                                     default_path = os.path.dirname(parfile),
                                     default_file = os.path.basename(parfile),
-                                    mode = 'w')
+                                    mode = 'w', parent_obj = self)
         else:
             savefile = file_chooser(title = 'Save parameter file to:',
-                                    mode = 'w')
+                                    mode = 'w', parent_obj = self)
         
         searchObj.write(savefile)
         

@@ -39,7 +39,7 @@ def get_data_files():
     base_files = []
     for filename in ['COPYING', 'COPYING.LESSER', 'README',
                      'LICENSE.txt', 'setup.nsi', 'mascot.ini',
-                     'unimod.sqlite', 'MSFileReader_x86_x64_v3.0SP3.exe']:
+                     'unimod.sqlite']:
         #filepath = os.path.join(start_dir, filename)
         #assert os.path.exists(filepath), filepath
         #base_files.append(filepath)
@@ -108,7 +108,8 @@ setup(name = 'mzDesktop',
                                            'tcl85.dll', 'tk85.dll',
                                            'uxtheme.dll', 'iertutil.dll',
                                            'wininet.dll', 'normaliz.dll',
-                                           'libzmq.pyd']
+                                           'libzmq.pyd'],
+                          'excludes':['scipy']
                           }
                },
       data_files = get_data_files()

@@ -438,44 +438,50 @@ class MascotPanel(wx.Frame):
                 wx.EndBusyCursor()
                 self.goButton.Enable(True)         
         
-                if not (self.downloadSearch.GetValue() and dat_id):
+                if not self.downloadSearch.GetValue():
                     if dat_id:
                         #wx.MessageBox("Successfully submitted search; search log # %s" % dat_id)
                         #return
                         result_ids.append((dat_id, None))
-                
-                try:
-                    wx.BeginBusyCursor()
-                    self.goButton.Enable(False)
-                    resultfile = retrieveMascotReport([dat_id],
-                                                      login_name = self.login,
-                                                      password = self.password,
-                                                      chosen_folder = os.path.dirname(datafile),
-                                                      rank_one = self.firstRank.GetValue(),
-                                                      ion_cutoff = float(self.ionCtrl.GetValue()),
-                                                      bold_red = self.boldRed.GetValue(),
-                                                      max_hits = 999999,
-                                                      show_query_data = self.showData.GetValue(),
-                                                      show_same_set = self.sameSet.GetValue(),
-                                                      show_sub_set = self.subSet.GetValue(),
-                                                      include_search_number = True)[0]
-                    if self.combineSpectra.GetValue():
-                        resultfile = combine_accessions(resultfile, resultfile)
-                    if self.fdr_filter.GetValue():
-                        fdrKey = self.fdrKeyCtrl.GetValue()
-                        if not fdrKey:
-                            fdrKey = 'rev_'
-                        resultfile = calculate_FDR(resultfile, outputfile = resultfile,
-                                                   decoyString = fdrKey)
-                    
-                    result_ids.append((dat_id, resultfile))
-                except Exception as err:
-                    wx.MessageBox('Result download encountered an error:\n\n%s' % repr(err),
-                                  "Could not run search.")   
-                    raise err
-                finally:
-                    wx.EndBusyCursor()            
-                    self.goButton.Enable(True)
+                else:
+                    try:
+                        wx.BeginBusyCursor()
+                        self.goButton.Enable(False)
+                        
+                        ioncutoff = self.ionCtrl.GetValue()
+                        if not ioncutoff.strip():
+                            ioncutoff = 0
+                        else:
+                            ioncutoff = float(ioncutoff)
+                        resultfile = retrieveMascotReport([dat_id],
+                                                          login_name = self.login,
+                                                          password = self.password,
+                                                          chosen_folder = os.path.dirname(datafile),
+                                                          rank_one = self.firstRank.GetValue(),
+                                                          ion_cutoff = ioncutoff,
+                                                          bold_red = self.boldRed.GetValue(),
+                                                          max_hits = 999999,
+                                                          show_query_data = self.showData.GetValue(),
+                                                          show_same_set = self.sameSet.GetValue(),
+                                                          show_sub_set = self.subSet.GetValue(),
+                                                          include_search_number = True)[0]
+                        if self.combineSpectra.GetValue():
+                            resultfile = combine_accessions(resultfile, resultfile)
+                        if self.fdr_filter.GetValue():
+                            fdrKey = self.fdrKeyCtrl.GetValue()
+                            if not fdrKey:
+                                fdrKey = 'rev_'
+                            resultfile = calculate_FDR(resultfile, outputfile = resultfile,
+                                                       decoyString = fdrKey)
+                        
+                        result_ids.append((dat_id, resultfile))
+                    except Exception as err:
+                        wx.MessageBox('Result download encountered an error:\n\n%s' % repr(err),
+                                      "Could not run search.")   
+                        raise err
+                    finally:
+                        wx.EndBusyCursor()            
+                        self.goButton.Enable(True)
 
         # These are here AND in finally clauses so that they're hit
         # after an empty loop or when something throws an exception.
@@ -514,7 +520,7 @@ class LoginDialog(wx.Dialog):
                              name="Login"), pos.next() )
 
         gbs.Add( wx.StaticText(self, -1, "Password:", style=wx.ALIGN_RIGHT), pos.next(), flag=wx.EXPAND )
-        gbs.Add( wx.TextCtrl(self, -1, "", style=wx.PASSWORD, size=(75,21),
+        gbs.Add( wx.TextCtrl(self, -1, "", style=wx.TE_PASSWORD, size=(75,21),
                              name="Password"), pos.next() )
 
         btn = wx.Button(self, wx.ID_OK)

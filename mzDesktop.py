@@ -30,7 +30,7 @@ try:
     import wxversion
     wxversion.select('4')
 except:
-    print "wx version 4 not found!  Some GUI elements may break or throw exceptions."
+    pass
 import wx
 print wx.version()
 

@@ -89,7 +89,7 @@ class FancyRenderer(wx.grid.PyGridCellRenderer):
         dc.SetBackgroundMode(wx.SOLID)
         dc.SetBrush(wx.Brush(wx.WHITE, wx.SOLID))
         dc.SetPen(wx.TRANSPARENT_PEN)
-        dc.DrawRectangleRect(rect)
+        dc.DrawRectangle(rect)
 
         #dc.SetBackgroundMode(wx.TRANSPARENT)
         dc.SetFont(attr.GetFont())
@@ -820,7 +820,7 @@ class CoveragePanel(BasicTab):
             event.Skip()
             return
         
-        point = event.GetPositionTuple()
+        #point = event.GetPositionTuple()
         x, y = self.sequenceDisplay.CalcUnscrolledPosition(event.GetX(), event.GetY())
         row, col = self.sequenceDisplay.XYToCell(x, y)
         if row < 0 or col < 0:

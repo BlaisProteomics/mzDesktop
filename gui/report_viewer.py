@@ -513,7 +513,7 @@ class ReportTable(wx.grid.PyGridTableBase):
         if self.model.default:
             return str(row + ((self.model.page - 1) * self.model.rows_per_page) + 1)
         else:
-            return row + 1
+            return str(row + 1)
 
     def GetColLabelValue(self, col):
         return '\n'.join(self.model.columns[col].split(None,1))

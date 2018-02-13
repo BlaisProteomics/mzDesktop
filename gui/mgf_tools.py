@@ -3,7 +3,7 @@ import multiplierz.mgf as mgf
 from gui import BasicTab
 import wx
 from async import launch_process
-
+import os
 
 reduceChargeTooltip = ("This algorithm attempts to determine the charge state "
                        "of fragment ions by matching fragment peaks with their "
@@ -360,6 +360,8 @@ class MGFPanel(BasicTab):
         functions = [(x[1], x[2]) for x in processes]
         for infile, outfile in zip(infiles, outfiles):
             print "Processing %s..." % infile
+            self.set_status("Extracting...", 0)
+            self.set_status(os.path.basename(infile), 1)
             #mgf.apply_spectral_process(infile, functions, outputFile = outfile)
             try:
                 self.processButton.Enable(False)
@@ -369,7 +371,8 @@ class MGFPanel(BasicTab):
                                infile, functions, outputFile = outfile)
             finally:
                 self.processButton.Enable(True)
-                
+                self.set_status("Ready.", 0)
+                self.set_status("", 1)
         
         print "Done."
     
